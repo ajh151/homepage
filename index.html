@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        :root {
+            --bg-primary: #111111;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border-color: #333333;
+            --accent-color: #4a9eff;
+            --hover-bg: #2a2a2a;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --text-primary: #111111;
+            --text-secondary: #666666;
+            --border-color: #e0e0e0;
+            --accent-color: #2563eb;
+            --hover-bg: #f0f0f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 60px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--hover-bg);
+        }
+
+        .search-section {
+            margin-bottom: 50px;
+        }
+
+        .search-form {
+            display: flex;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--bg-secondary);
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 16px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-btn {
+            background: var(--accent-color);
+            border: none;
+            color: white;
+            padding: 16px 24px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
+        }
+
+        .search-btn:hover {
+            opacity: 0.9;
+        }
+
+        .apps-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+        }
+
+        .apps-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .apps-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .add-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 16px;
+        }
+
+        .app-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-primary);
+            padding: 20px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 1px solid transparent;
+            cursor: grab;
+        }
+
+        .app-item:hover {
+            background: var(--hover-bg);
+            border-color: var(--border-color);
+        }
+
+        .app-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+            cursor: grabbing;
+        }
+
+        .app-item.drag-over {
+            border-color: var(--accent-color);
+            background: var(--hover-bg);
+        }
+
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .app-name {
+            font-size: 12px;
+            text-align: center;
+            color: var(--text-secondary);
+            word-break: break-word;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .app-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            max-width: 400px;
+            margin: 20vh auto;
+            padding: 30px;
+            border-radius: 12px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .icon-input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-input {
+            flex: 1;
+        }
+
+        .emoji-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .emoji-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        .emoji-picker {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: none;
+            z-index: 1001;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 300px;
+        }
+
+        .emoji-picker.show {
+            display: block;
+        }
+
+        .emoji-category {
+            margin-bottom: 12px;
+        }
+
+        .emoji-category:last-child {
+            margin-bottom: 0;
+        }
+
+        .emoji-category-title {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .emoji-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .emoji-option {
+            background: none;
+            border: none;
+            font-size: 18px;
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+
+        .emoji-option:hover {
+            background: var(--hover-bg);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: none;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--hover-bg);
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 20px 16px;
+            }
+            
+            .header {
+                margin-bottom: 40px;
+            }
+            
+            .logo {
+                font-size: 20px;
+            }
+            
+            .apps-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                gap: 12px;
+            }
+            
+            .app-item {
+                padding: 16px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">Home</div>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="theme-icon">☀️</span>
+            </button>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <form class="search-form" action="https://www.google.com/search" method="get">
+                <input type="text" name="q" class="search-input" placeholder="Search..." autocomplete="off">
+                <button type="submit" class="search-btn">Search</button>
+            </form>
+        </div>
+
+        <!-- Apps Section -->
+        <div class="apps-section">
+            <div class="apps-header">
+                <h2 class="apps-title">Apps</h2>
+                <button class="add-btn" onclick="openModal()">Add</button>
+            </div>
+            <div class="apps-grid" id="appsGrid">
+                <!-- Apps will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add App Modal -->
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Add App</h3>
+            <form id="addAppForm">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" id="appName" placeholder="Plex" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">URL</label>
+                    <input type="url" class="form-input" id="appUrl" placeholder="http://localhost:32400" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon</label>
+                    <div class="icon-input-wrapper">
+                        <input type="text" class="form-input icon-input" id="appIcon" placeholder="🎬" maxlength="2">
+                        <button type="button" class="emoji-btn" onclick="toggleEmojiPicker()">📂</button>
+                    </div>
+                    <div class="emoji-picker" id="emojiPicker">
+                        <div class="emoji-category">
+                            <div class="emoji-category-title">Media & Entertainment</div>
+                            <div class="emoji-grid">
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🎬')">🎬</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📺')">📺</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🎵')">🎵</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🎮')">🎮</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📷')">📷</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📹')">📹</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🎯')">🎯</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🎨')">🎨</button>
+                            </div>
+                        </div>
+                        
+                        <div class="emoji-category">
+                            <div class="emoji-category-title">Tech & Development</div>
+                            <div class="emoji-grid">
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🐳')">🐳</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🛡️')">🛡️</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('⚙️')">⚙️</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🔧')">🔧</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('💻')">💻</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🖥️')">🖥️</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('⚡')">⚡</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🔌')">🔌</button>
+                            </div>
+                        </div>
+                        
+                        <div class="emoji-category">
+                            <div class="emoji-category-title">Files & Storage</div>
+                            <div class="emoji-grid">
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📁')">📁</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📊')">📊</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📋')">📋</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📂')">📂</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🗂️')">🗂️</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('💾')">💾</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🗄️')">🗄️</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📦')">📦</button>
+                            </div>
+                        </div>
+                        
+                        <div class="emoji-category">
+                            <div class="emoji-category-title">Communication</div>
+                            <div class="emoji-grid">
+                                <button type="button" class="emoji-option" onclick="selectEmoji('💬')">💬</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📧')">📧</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📞')">📞</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🌐')">🌐</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📱')">📱</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📡')">📡</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('🔗')">🔗</button>
+                                <button type="button" class="emoji-option" onclick="selectEmoji('📮')">📮</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Click the folder button to pick an emoji, or type a letter
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Theme management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('homepage-theme') || 'dark';
+            const themeIcon = document.getElementById('theme-icon');
+            
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '🌙';
+            } else {
+                themeIcon.textContent = '☀️';
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('theme-icon');
+            const currentTheme = html.getAttribute('data-theme');
+            
+            if (currentTheme === 'light') {
+                html.removeAttribute('data-theme');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('homepage-theme', 'dark');
+            } else {
+                html.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('homepage-theme', 'light');
+            }
+        }
+
+        // Apps management
+        let apps = [
+            { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
+            { name: 'Pi-hole', url: 'http://localhost/admin', icon: '🛡️' },
+            { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
+        ];
+
+        function loadApps() {
+            const saved = localStorage.getItem('homepage-apps');
+            if (saved) {
+                try {
+                    apps = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Error loading apps:', e);
+                }
+            }
+            renderApps();
+        }
+
+        function saveApps() {
+            localStorage.setItem('homepage-apps', JSON.stringify(apps));
+        }
+
+        function renderApps() {
+            const grid = document.getElementById('appsGrid');
+            grid.innerHTML = '';
+
+            apps.forEach((app, index) => {
+                const appElement = document.createElement('a');
+                appElement.className = 'app-item';
+                appElement.href = app.url;
+                appElement.target = '_blank';
+                appElement.draggable = true;
+                appElement.dataset.index = index;
+                
+                appElement.innerHTML = `
+                    <div class="app-icon">${app.icon || app.name.charAt(0).toUpperCase()}</div>
+                    <div class="app-name">${app.name}</div>
+                    <button class="delete-btn" onclick="deleteApp(event, ${index})" title="Delete">×</button>
+                `;
+                
+                // Add drag event listeners
+                appElement.addEventListener('dragstart', handleDragStart);
+                appElement.addEventListener('dragover', handleDragOver);
+                appElement.addEventListener('drop', handleDrop);
+                appElement.addEventListener('dragend', handleDragEnd);
+                
+                grid.appendChild(appElement);
+            });
+        }
+
+        function openModal() {
+            document.getElementById('addModal').style.display = 'block';
+            document.getElementById('appName').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('addModal').style.display = 'none';
+            document.getElementById('addAppForm').reset();
+        }
+
+        function deleteApp(event, index) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            if (confirm('Delete this app?')) {
+                apps.splice(index, 1);
+                saveApps();
+                renderApps();
+            }
+        }
+
+        // Emoji picker functionality
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            picker.classList.toggle('show');
+        }
+
+        function selectEmoji(emoji) {
+            document.getElementById('appIcon').value = emoji;
+            document.getElementById('emojiPicker').classList.remove('show');
+        }
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', function(e) {
+            const picker = document.getElementById('emojiPicker');
+            const emojiBtn = document.querySelector('.emoji-btn');
+            if (!picker.contains(e.target) && e.target !== emojiBtn) {
+                picker.classList.remove('show');
+            }
+        });
+
+        // Drag and drop functionality
+        let draggedElement = null;
+        let draggedIndex = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            draggedIndex = parseInt(this.dataset.index);
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+            return false;
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            if (draggedElement !== this) {
+                const dropIndex = parseInt(this.dataset.index);
+                
+                // Reorder the apps array
+                const draggedApp = apps[draggedIndex];
+                apps.splice(draggedIndex, 1);
+                apps.splice(dropIndex, 0, draggedApp);
+                
+                saveApps();
+                renderApps();
+            }
+
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            // Clean up
+            document.querySelectorAll('.app-item').forEach(item => {
+                item.classList.remove('dragging', 'drag-over');
+            });
+            draggedElement = null;
+            draggedIndex = null;
+        }
+
+        // Event listeners
+        document.getElementById('addAppForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('appName').value.trim();
+            const url = document.getElementById('appUrl').value.trim();
+            const icon = document.getElementById('appIcon').value.trim();
+            
+            if (name && url) {
+                apps.push({ name, url, icon });
+                saveApps();
+                renderApps();
+                closeModal();
+            }
+        });
+
+        document.getElementById('addModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+            if (e.key === '/' && !e.target.matches('input')) {
+                e.preventDefault();
+                document.querySelector('.search-input').focus();
+            }
+        });
+
+        // Initialize
+        initTheme();
+        loadApps();
+    </script>
+</body>
+</html>
