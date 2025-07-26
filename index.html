@@ -683,8 +683,8 @@
 
         <!-- Search Section -->
         <div class="search-section">
-            <form class="search-form" action="https://www.google.com/search" method="get">
-                <input type="text" name="q" class="search-input" placeholder="Search..." autocomplete="off">
+            <form class="search-form" action="https://www.google.com/search" method="get" id="searchForm">
+                <input type="text" name="q" class="search-input" placeholder="Search..." autocomplete="off" id="searchInput">
                 <button type="submit" class="search-btn">Search</button>
             </form>
         </div>
@@ -1022,7 +1022,9 @@
             const saved = localStorage.getItem('homepage-settings');
             if (saved) {
                 try {
-                    settings = { ...settings, ...JSON.parse(saved) };
+                    const savedSettings = JSON.parse(saved);
+                    settings = { ...settings, ...savedSettings };
+                    console.log('Loaded settings:', settings);
                 } catch (e) {
                     console.error('Error loading settings:', e);
                 }
@@ -1032,10 +1034,13 @@
 
         function saveSettings() {
             localStorage.setItem('homepage-settings', JSON.stringify(settings));
+            console.log('Settings saved:', settings);
             applySettings();
         }
 
         function applySettings() {
+            console.log('Applying settings:', settings);
+            
             // Update page title
             const pageTitle = document.getElementById('pageTitle');
             if (pageTitle) {
@@ -1043,10 +1048,15 @@
                 document.title = settings.title;
             }
 
-            // Update search form
-            const searchForm = document.querySelector('.search-form');
-            if (searchForm && searchEngines[settings.searchEngine]) {
-                searchForm.action = searchEngines[settings.searchEngine];
+            // Update search form action and parameter
+            const searchForm = document.getElementById('searchForm');
+            const searchInput = document.getElementById('searchInput');
+            
+            if (searchForm && searchInput && searchEngines[settings.searchEngine]) {
+                const engine = searchEngines[settings.searchEngine];
+                searchForm.action = engine.url;
+                searchInput.name = engine.param;
+                console.log('Search engine set to:', engine.url, 'with parameter:', engine.param);
             }
 
             // Show/hide sections
@@ -1624,22 +1634,38 @@
         // Settings form submission
         document.getElementById('settingsForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            console.log('Settings form submitted');
             
-            // Update settings from form
-            settings.title = document.getElementById('settingsTitle').value.trim() || 'Home';
-            settings.searchEngine = document.getElementById('settingsSearchEngine').value;
-            settings.statsInterval = parseInt(document.getElementById('settingsStatsInterval').value) || 30;
-            settings.dockerInterval = parseInt(document.getElementById('settingsDockerInterval').value) || 60;
-            settings.defaultTheme = document.getElementById('settingsDefaultTheme').value;
-            settings.showSystemStats = document.getElementById('showSystemStats').checked;
-            settings.showDockerContainers = document.getElementById('showDockerContainers').checked;
+            // Get values from form and update settings
+            const titleValue = document.getElementById('settingsTitle').value.trim();
+            const searchValue = document.getElementById('settingsSearchEngine').value;
+            const statsValue = parseInt(document.getElementById('settingsStatsInterval').value);
+            const dockerValue = parseInt(document.getElementById('settingsDockerInterval').value);
+            const themeValue = document.getElementById('settingsDefaultTheme').value;
+            const showStatsValue = document.getElementById('showSystemStats').checked;
+            const showDockerValue = document.getElementById('showDockerContainers').checked;
             
+            // Update settings object
+            settings.title = titleValue || 'Home';
+            settings.searchEngine = searchValue;
+            settings.statsInterval = statsValue || 30;
+            settings.dockerInterval = dockerValue || 60;
+            settings.defaultTheme = themeValue;
+            settings.showSystemStats = showStatsValue;
+            settings.showDockerContainers = showDockerValue;
+            
+            console.log('Updated settings:', settings);
+            
+            // Save settings
             saveSettings();
+            
+            // Close modal
             closeSettings();
+            
+            // Show success message
             showStatus('success', 'Settings saved successfully!');
             
-            // Restart intervals with new timings
-            location.reload(); // Simple way to restart with new intervals
+            // Note: Page will reload on next visit to apply new intervals
         });
 
         // Docker form submissions
