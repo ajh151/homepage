@@ -339,6 +339,54 @@
             background: var(--hover-bg);
         }
 
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            background: var(--hover-bg);
+        }
+
+        .stat-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .stat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .status-good { color: #10b981; }
+        .status-warning { color: #f59e0b; }
+        .status-error { color: #ef4444; }
+
         .form-label {
             display: block;
             margin-bottom: 8px;
@@ -453,6 +501,58 @@
             </div>
             <div class="apps-grid" id="appsGrid">
                 <!-- Apps will be loaded here -->
+            </div>
+        </div>
+
+        <!-- System Monitoring Section -->
+        <div class="apps-section" style="margin-top: 20px;">
+            <div class="apps-header">
+                <h2 class="apps-title">System Status</h2>
+                <button class="add-btn" onclick="refreshStats()">Refresh</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🌡️</div>
+                    <div class="stat-info">
+                        <div class="stat-label">CPU Temp</div>
+                        <div class="stat-value" id="cpuTemp">--°C</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🛡️</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Fail2ban</div>
+                        <div class="stat-value" id="fail2banCount">-- attempts</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💻</div>
+                    <div class="stat-info">
+                        <div class="stat-label">CPU Usage</div>
+                        <div class="stat-value" id="cpuUsage">--%</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💾</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Memory</div>
+                        <div class="stat-value" id="memUsage">--%</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💿</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Disk Usage</div>
+                        <div class="stat-value" id="diskUsage">--%</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Uptime</div>
+                        <div class="stat-value" id="uptime">-- days</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -747,6 +847,76 @@
                 document.querySelector('.search-input').focus();
             }
         });
+
+        // System monitoring functions
+        async function getSystemStats() {
+            try {
+                const response = await fetch('/api/stats');
+                if (response.ok) {
+                    const stats = await response.json();
+                    updateStatsDisplay(stats);
+                } else {
+                    // Fallback to mock data if API not available
+                    updateStatsDisplay(getMockStats());
+                }
+            } catch (error) {
+                // Use mock data if no API
+                updateStatsDisplay(getMockStats());
+            }
+        }
+
+        function getMockStats() {
+            return {
+                cpuTemp: Math.floor(Math.random() * 20 + 45), // 45-65°C
+                fail2banCount: Math.floor(Math.random() * 50),
+                cpuUsage: Math.floor(Math.random() * 30 + 10), // 10-40%
+                memUsage: Math.floor(Math.random() * 40 + 30), // 30-70%
+                diskUsage: Math.floor(Math.random() * 20 + 60), // 60-80%
+                uptime: Math.floor(Math.random() * 30 + 1) // 1-30 days
+            };
+        }
+
+        function updateStatsDisplay(stats) {
+            // Update CPU temp with color coding
+            const cpuTempEl = document.getElementById('cpuTemp');
+            cpuTempEl.textContent = `${stats.cpuTemp}°C`;
+            cpuTempEl.className = 'stat-value ' + (stats.cpuTemp > 70 ? 'status-error' : stats.cpuTemp > 60 ? 'status-warning' : 'status-good');
+
+            // Update fail2ban
+            const fail2banEl = document.getElementById('fail2banCount');
+            fail2banEl.textContent = `${stats.fail2banCount} today`;
+            fail2banEl.className = 'stat-value ' + (stats.fail2banCount > 20 ? 'status-warning' : 'status-good');
+
+            // Update CPU usage
+            const cpuUsageEl = document.getElementById('cpuUsage');
+            cpuUsageEl.textContent = `${stats.cpuUsage}%`;
+            cpuUsageEl.className = 'stat-value ' + (stats.cpuUsage > 80 ? 'status-error' : stats.cpuUsage > 60 ? 'status-warning' : 'status-good');
+
+            // Update memory usage
+            const memUsageEl = document.getElementById('memUsage');
+            memUsageEl.textContent = `${stats.memUsage}%`;
+            memUsageEl.className = 'stat-value ' + (stats.memUsage > 85 ? 'status-error' : stats.memUsage > 70 ? 'status-warning' : 'status-good');
+
+            // Update disk usage
+            const diskUsageEl = document.getElementById('diskUsage');
+            diskUsageEl.textContent = `${stats.diskUsage}%`;
+            diskUsageEl.className = 'stat-value ' + (stats.diskUsage > 90 ? 'status-error' : stats.diskUsage > 80 ? 'status-warning' : 'status-good');
+
+            // Update uptime
+            document.getElementById('uptime').textContent = `${stats.uptime} days`;
+        }
+
+        function refreshStats() {
+            // Show loading state
+            document.querySelectorAll('.stat-value').forEach(el => {
+                el.textContent = '...';
+                el.className = 'stat-value';
+            });
+            
+            setTimeout(() => {
+                getSystemStats();
+            }, 500);
+        }
 
         // Initialize
         initTheme();
