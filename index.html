@@ -1240,6 +1240,9 @@
             try {
                 console.log('Deploying container with data:', formData);
                 
+                // Close the modal immediately when deploy is clicked
+                closeDockerModal();
+                
                 // Show deployment started status
                 showStatus('info', 'Deploying container...', `Starting deployment of ${formData.name || 'container'}`);
                 
@@ -1255,7 +1258,6 @@
                 console.log('Deployment result:', result);
                 
                 if (result.success) {
-                    closeDockerModal();
                     showStatus('success', 'Container deployed successfully!', result.output || 'Container is now running');
                     
                     // Refresh containers after deployment
