@@ -641,7 +641,10 @@
         <div class="apps-section">
             <div class="apps-header">
                 <h2 class="apps-title">Docker Containers</h2>
-                <button class="add-btn" onclick="refreshContainers()">Refresh</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="add-btn" onclick="openDockerModal()">Add Container</button>
+                    <button class="add-btn" onclick="refreshContainers()">Refresh</button>
+                </div>
             </div>
             <div class="container-grid" id="containerGrid">
                 <!-- Containers will be loaded here -->
@@ -669,6 +672,65 @@
                 <div class="modal-buttons">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Docker Container Modal -->
+    <div class="modal" id="dockerModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3 class="modal-title">Add Docker Container</h3>
+            
+            <!-- Method Selection -->
+            <div style="margin-bottom: 20px; display: flex; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="showDockerMethod('simple')" id="simpleBtn">Simple Run</button>
+                <button type="button" class="btn btn-secondary" onclick="showDockerMethod('compose')" id="composeBtn">Docker Compose</button>
+            </div>
+            
+            <!-- Simple Docker Run Form -->
+            <form id="dockerSimpleForm" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Container Name</label>
+                    <input type="text" class="form-input" id="dockerName" placeholder="my-container" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Docker Image</label>
+                    <input type="text" class="form-input" id="dockerImage" placeholder="nginx:latest" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ports (optional)</label>
+                    <input type="text" class="form-input" id="dockerPorts" placeholder="8080:80">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Format: host:container (e.g., 8080:80)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Environment Variables (optional)</label>
+                    <textarea class="form-input" id="dockerEnv" placeholder="VAR1=value1&#10;VAR2=value2" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Volumes (optional)</label>
+                    <input type="text" class="form-input" id="dockerVolumes" placeholder="/host/path:/container/path">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeDockerModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Deploy Container</button>
+                </div>
+            </form>
+            
+            <!-- Docker Compose Form -->
+            <form id="dockerComposeForm" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Docker Compose YAML</label>
+                    <textarea class="form-input" id="dockerCompose" placeholder="version: '3.8'&#10;services:&#10;  web:&#10;    image: nginx:latest&#10;    ports:&#10;      - '8080:80'" rows="12" required></textarea>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Paste your complete docker-compose.yml content here
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeDockerModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Deploy Compose</button>
                 </div>
             </form>
         </div>
@@ -975,6 +1037,90 @@
             window.open(`/api/docker.php?logs=${containerName}`, '_blank');
         }
 
+        // Docker modal functions
+        function openDockerModal() {
+            console.log('Opening Docker modal...');
+            const modal = document.getElementById('dockerModal');
+            if (modal) {
+                modal.style.display = 'block';
+                showDockerMethod('simple'); // Default to simple method
+            }
+        }
+
+        function closeDockerModal() {
+            const modal = document.getElementById('dockerModal');
+            if (modal) {
+                modal.style.display = 'none';
+                // Reset forms
+                const simpleForm = document.getElementById('dockerSimpleForm');
+                const composeForm = document.getElementById('dockerComposeForm');
+                if (simpleForm) simpleForm.reset();
+                if (composeForm) composeForm.reset();
+            }
+        }
+
+        function showDockerMethod(method) {
+            const simpleForm = document.getElementById('dockerSimpleForm');
+            const composeForm = document.getElementById('dockerComposeForm');
+            const simpleBtn = document.getElementById('simpleBtn');
+            const composeBtn = document.getElementById('composeBtn');
+
+            if (method === 'simple') {
+                if (simpleForm) simpleForm.style.display = 'block';
+                if (composeForm) composeForm.style.display = 'none';
+                if (simpleBtn) {
+                    simpleBtn.style.background = 'var(--accent-color)';
+                    simpleBtn.style.color = 'white';
+                }
+                if (composeBtn) {
+                    composeBtn.style.background = 'none';
+                    composeBtn.style.color = 'var(--text-primary)';
+                }
+            } else {
+                if (simpleForm) simpleForm.style.display = 'none';
+                if (composeForm) composeForm.style.display = 'block';
+                if (composeBtn) {
+                    composeBtn.style.background = 'var(--accent-color)';
+                    composeBtn.style.color = 'white';
+                }
+                if (simpleBtn) {
+                    simpleBtn.style.background = 'none';
+                    simpleBtn.style.color = 'var(--text-primary)';
+                }
+            }
+        }
+
+        async function deployContainer(formData) {
+            try {
+                console.log('Deploying container with data:', formData);
+                
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                console.log('Deployment result:', result);
+                
+                if (result.success) {
+                    closeDockerModal();
+                    alert('Container deployed successfully!');
+                    // Refresh containers after deployment
+                    setTimeout(() => {
+                        getContainers();
+                    }, 2000);
+                } else {
+                    alert(`Deployment failed: ${result.error || result.output || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Deployment error:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
         // App form submission
         document.getElementById('addAppForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -998,10 +1144,47 @@
             }
         });
 
+        // Docker modal event listeners
+        document.getElementById('dockerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDockerModal();
+            }
+        });
+
+        // Docker form submissions
+        document.getElementById('dockerSimpleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                action: 'deploy',
+                method: 'simple',
+                name: document.getElementById('dockerName').value.trim(),
+                image: document.getElementById('dockerImage').value.trim(),
+                ports: document.getElementById('dockerPorts').value.trim(),
+                env: document.getElementById('dockerEnv').value.trim(),
+                volumes: document.getElementById('dockerVolumes').value.trim()
+            };
+            
+            deployContainer(formData);
+        });
+
+        document.getElementById('dockerComposeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                action: 'deploy',
+                method: 'compose',
+                compose: document.getElementById('dockerCompose').value.trim()
+            };
+            
+            deployContainer(formData);
+        });
+
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeModal();
+                closeDockerModal();
             }
         });
 
