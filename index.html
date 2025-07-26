@@ -367,6 +367,76 @@
             font-weight: 500;
         }
 
+        .container-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 60px;
+        }
+
+        .action-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        .action-btn.start {
+            border-color: #10b981;
+            color: #10b981;
+        }
+
+        .action-btn.start:hover {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .action-btn.stop {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .action-btn.stop:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .action-btn.restart {
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+
+        .action-btn.restart:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .action-btn.purge {
+            background: #dc2626;
+            color: white;
+            border-color: #dc2626;
+        }
+
+        .action-btn.purge:hover {
+            background: #b91c1c;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -794,12 +864,115 @@
                             <div class="detail-value">${container.memory || '0MB'}</div>
                         </div>
                     </div>
+                    
+                    <div class="container-actions">
+                        ${container.status === 'running' ? `
+                            <button class="action-btn stop" onclick="containerAction('${container.name}', 'stop')">Stop</button>
+                            <button class="action-btn restart" onclick="containerAction('${container.name}', 'restart')">Restart</button>
+                        ` : `
+                            <button class="action-btn start" onclick="containerAction('${container.name}', 'start')">Start</button>
+                        `}
+                        <button class="action-btn" onclick="containerLogs('${container.name}')">Logs</button>
+                        <button class="action-btn stop" onclick="removeContainer('${container.name}', false)">Remove</button>
+                        <button class="action-btn purge" onclick="removeContainer('${container.name}', true)">Purge</button>
+                    </div>
                 </div>
             `).join('');
         }
 
         function refreshContainers() {
             getContainers();
+        }
+
+        // Container action functions
+        async function containerAction(containerName, action) {
+            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} container "${containerName}"?`)) {
+                return;
+            }
+
+            try {
+                // Find the container card and show loading state
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                containerCard.classList.add('loading');
+
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        container: containerName,
+                        action: action
+                    })
+                });
+
+                const result = await response.json();
+                console.log(`${action} result:`, result);
+                
+                if (result.success) {
+                    // Refresh containers after action
+                    setTimeout(() => {
+                        getContainers();
+                    }, 1000);
+                } else {
+                    alert(`Failed to ${action} container: ${result.error || result.output || 'Unknown error'}`);
+                    containerCard.classList.remove('loading');
+                }
+            } catch (error) {
+                console.error(`Error ${action} container:`, error);
+                alert(`Error: ${error.message}`);
+                // Remove loading state on error
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                if (containerCard) containerCard.classList.remove('loading');
+            }
+        }
+
+        async function removeContainer(containerName, purge = false) {
+            const action = purge ? 'purge (remove container + volumes + images)' : 'remove container';
+            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} "${containerName}"?`)) {
+                return;
+            }
+
+            try {
+                // Find the container card and show loading state
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                containerCard.classList.add('loading');
+
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        container: containerName,
+                        action: purge ? 'purge' : 'remove'
+                    })
+                });
+
+                const result = await response.json();
+                console.log(`${purge ? 'purge' : 'remove'} result:`, result);
+                
+                if (result.success) {
+                    // Refresh containers after removal
+                    setTimeout(() => {
+                        getContainers();
+                    }, 1000);
+                } else {
+                    alert(`Failed to ${action}: ${result.error || result.output || 'Unknown error'}`);
+                    containerCard.classList.remove('loading');
+                }
+            } catch (error) {
+                console.error(`Error ${purge ? 'purging' : 'removing'} container:`, error);
+                alert(`Error: ${error.message}`);
+                // Remove loading state on error
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                if (containerCard) containerCard.classList.remove('loading');
+            }
+        }
+
+        function containerLogs(containerName) {
+            // Open logs in new window/tab
+            window.open(`/api/docker.php?logs=${containerName}`, '_blank');
         }
 
         // App form submission
