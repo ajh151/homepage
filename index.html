@@ -637,7 +637,7 @@
         <div class="header">
             <div class="logo">Home</div>
             <button class="theme-toggle" onclick="toggleTheme()">
-                <span id="theme-icon"☀️</span>
+                <span id="theme-icon">☀️</span>
             </button>
         </div>
 
@@ -942,6 +942,91 @@
                 picker.classList.remove('show');
             }
         });
+
+        async function deployContainer(formData) {
+            try {
+                console.log('Deploying container with data:', formData);
+                
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                console.log('Response status:', response.status);
+                const result = await response.json();
+                console.log('Deployment result:', result);
+                
+                if (result.success) {
+                    closeDockerModal();
+                    alert('Container deployed successfully!');
+                    setTimeout(() => {
+                        getContainers();
+                    }, 2000);
+                } else {
+                    alert(`Deployment failed: ${result.error || result.output || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Deployment error:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        // Docker modal functions
+        function openDockerModal() {
+            console.log('Opening Docker modal...');
+            const modal = document.getElementById('dockerModal');
+            if (modal) {
+                modal.style.display = 'block';
+                showDockerMethod('simple');
+                console.log('Docker modal opened');
+            } else {
+                console.error('Docker modal not found!');
+            }
+        }
+
+        function closeDockerModal() {
+            const modal = document.getElementById('dockerModal');
+            const simpleForm = document.getElementById('dockerSimpleForm');
+            const composeForm = document.getElementById('dockerComposeForm');
+            
+            if (modal) modal.style.display = 'none';
+            if (simpleForm) simpleForm.reset();
+            if (composeForm) composeForm.reset();
+        }
+
+        function showDockerMethod(method) {
+            const simpleForm = document.getElementById('dockerSimpleForm');
+            const composeForm = document.getElementById('dockerComposeForm');
+            const simpleBtn = document.getElementById('simpleBtn');
+            const composeBtn = document.getElementById('composeBtn');
+
+            if (method === 'simple') {
+                if (simpleForm) simpleForm.style.display = 'block';
+                if (composeForm) composeForm.style.display = 'none';
+                if (simpleBtn) {
+                    simpleBtn.style.background = 'var(--accent-color)';
+                    simpleBtn.style.color = 'white';
+                }
+                if (composeBtn) {
+                    composeBtn.style.background = 'none';
+                    composeBtn.style.color = 'var(--text-primary)';
+                }
+            } else {
+                if (simpleForm) simpleForm.style.display = 'none';
+                if (composeForm) composeForm.style.display = 'block';
+                if (composeBtn) {
+                    composeBtn.style.background = 'var(--accent-color)';
+                    composeBtn.style.color = 'white';
+                }
+                if (simpleBtn) {
+                    simpleBtn.style.background = 'none';
+                    simpleBtn.style.color = 'var(--text-primary)';
+                }
+            }
+        }
 
         // Drag and drop functionality
         let draggedElement = null;
