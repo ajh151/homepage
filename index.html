@@ -672,13 +672,13 @@
         <div class="header">
             <div class="logo" id="pageTitle">Home</div>
             <div style="display: flex; gap: 8px;">
-                <button class="theme-toggle" onclick="console.log('Settings clicked'); openSettings();">
-                    <span>⚙️</span>
+                <button class="theme-toggle" onclick="alert('Settings clicked'); openSettings();">
+                    <span⚙️</span>
                 </button>
                 <button class="theme-toggle" onclick="toggleTheme()">
                     <span id="theme-icon">☀️</span>
                 </button>
-                <button class="theme-toggle" onclick="console.log('Current settings:', settings); console.log('localStorage:', localStorage.getItem('homepage-settings'));" style="font-size: 10px;">
+                <button class="theme-toggle" onclick="alert('Debug: ' + typeof settings);">
                     <span>🐛</span>
                 </button>
             </div>
@@ -920,7 +920,7 @@
                 <div class="modal-buttons">
                     <button type="button" class="btn btn-secondary" onclick="resetSettings()">Reset to Defaults</button>
                     <button type="button" class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSettingsFromForm()">Save Settings</button>
                 </div>
             </form>
         </div>
@@ -1160,6 +1160,34 @@
                 saveSettings();
                 openSettings(); // Refresh the form
                 showStatus('success', 'Settings reset to defaults');
+            }
+        }
+
+        function saveSettingsFromForm() {
+            alert('Save button clicked!'); // Test if this works
+            
+            // Get form values
+            const titleInput = document.getElementById('settingsTitle');
+            const searchSelect = document.getElementById('settingsSearchEngine');
+            
+            if (titleInput && searchSelect) {
+                settings.title = titleInput.value.trim() || 'Home';
+                settings.searchEngine = searchSelect.value;
+                
+                alert('Saving: ' + settings.title + ' / ' + settings.searchEngine);
+                
+                // Save to localStorage
+                localStorage.setItem('homepage-settings', JSON.stringify(settings));
+                
+                // Apply settings
+                document.getElementById('pageTitle').textContent = settings.title;
+                
+                // Close modal
+                closeSettings();
+                
+                alert('Settings saved!');
+            } else {
+                alert('Form elements not found!');
             }
         }
 
