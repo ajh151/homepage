@@ -851,16 +851,16 @@
         // System monitoring functions
         async function getSystemStats() {
             try {
-                const response = await fetch('/api/stats');
+                const response = await fetch('/api/stats.php');
                 if (response.ok) {
                     const stats = await response.json();
                     updateStatsDisplay(stats);
                 } else {
-                    // Fallback to mock data if API not available
+                    console.log('API not available, using mock data');
                     updateStatsDisplay(getMockStats());
                 }
             } catch (error) {
-                // Use mock data if no API
+                console.log('Error fetching stats:', error);
                 updateStatsDisplay(getMockStats());
             }
         }
@@ -921,6 +921,10 @@
         // Initialize
         initTheme();
         loadApps();
+        getSystemStats();
+        
+        // Auto-refresh stats every 30 seconds
+        setInterval(getSystemStats, 30000);
     </script>
 </body>
 </html>
