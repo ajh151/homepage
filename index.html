@@ -175,15 +175,23 @@
             border-color: var(--border-color);
         }
 
+        .app-item:active {
+            cursor: grabbing;
+        }
+
         .app-item.dragging {
             opacity: 0.5;
-            transform: rotate(5deg);
+            transform: rotate(5deg) scale(1.05);
             cursor: grabbing;
+            z-index: 1000;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
 
         .app-item.drag-over {
             border-color: var(--accent-color);
             background: var(--hover-bg);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(74, 158, 255, 0.3);
         }
 
         .app-icon {
@@ -928,6 +936,80 @@
             localStorage.setItem('homepage-apps', JSON.stringify(apps));
         }
 
+        // Drag and drop functionality (defined before renderApps)
+        let draggedElement = null;
+        let draggedIndex = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            draggedIndex = parseInt(this.dataset.index);
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.outerHTML);
+            
+            console.log('Drag started:', apps[draggedIndex].name);
+        }
+
+        function handleDragEnter(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            this.classList.add('drag-over');
+            return false;
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+
+            this.classList.remove('drag-over');
+
+            if (draggedElement !== this) {
+                const dropIndex = parseInt(this.dataset.index);
+                
+                console.log('Dropping:', apps[draggedIndex].name, 'at position', dropIndex);
+                
+                // Reorder the apps array
+                const draggedApp = apps[draggedIndex];
+                apps.splice(draggedIndex, 1);
+                apps.splice(dropIndex, 0, draggedApp);
+                
+                saveApps();
+                renderApps();
+                
+                console.log('Apps reordered successfully');
+            }
+
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            // Clean up all drag states
+            document.querySelectorAll('.app-item').forEach(item => {
+                item.classList.remove('dragging', 'drag-over');
+            });
+            draggedElement = null;
+            draggedIndex = null;
+            
+            console.log('Drag ended');
+        }
+
         function renderApps() {
             const grid = document.getElementById('appsGrid');
             grid.innerHTML = '';
@@ -945,6 +1027,14 @@
                     <div class="app-name">${app.name}</div>
                     <button class="delete-btn" onclick="deleteApp(event, ${index})" title="Delete">×</button>
                 `;
+                
+                // Add drag event listeners to each app
+                appElement.addEventListener('dragstart', handleDragStart);
+                appElement.addEventListener('dragover', handleDragOver);
+                appElement.addEventListener('dragenter', handleDragEnter);
+                appElement.addEventListener('dragleave', handleDragLeave);
+                appElement.addEventListener('drop', handleDrop);
+                appElement.addEventListener('dragend', handleDragEnd);
                 
                 grid.appendChild(appElement);
             });
