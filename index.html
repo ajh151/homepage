@@ -119,6 +119,7 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 30px;
+            margin-bottom: 20px;
         }
 
         .apps-header {
@@ -223,122 +224,6 @@
             opacity: 1;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            max-width: 400px;
-            margin: 20vh auto;
-            padding: 30px;
-            border-radius: 12px;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            margin-bottom: 24px;
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            position: relative;
-        }
-
-        .icon-input-wrapper {
-            display: flex;
-            gap: 8px;
-        }
-
-        .icon-input {
-            flex: 1;
-        }
-
-        .emoji-btn {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 12px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .emoji-btn:hover {
-            background: var(--hover-bg);
-        }
-
-        .emoji-picker {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            display: none;
-            z-index: 1001;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            width: 300px;
-        }
-
-        .emoji-picker.show {
-            display: block;
-        }
-
-        .emoji-category {
-            margin-bottom: 12px;
-        }
-
-        .emoji-category:last-child {
-            margin-bottom: 0;
-        }
-
-        .emoji-category-title {
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .emoji-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-        }
-
-        .emoji-option {
-            background: none;
-            border: none;
-            font-size: 18px;
-            padding: 6px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-        }
-
-        .emoji-option:hover {
-            background: var(--hover-bg);
-        }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -387,160 +272,35 @@
         .status-warning { color: #f59e0b; }
         .status-error { color: #ef4444; }
 
-        .container-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 16px;
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
         }
 
-        .container-card {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .container-card:hover {
-            background: var(--hover-bg);
-        }
-
-        .container-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 12px;
-        }
-
-        .container-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .container-name {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-            word-break: break-word;
-        }
-
-        .container-image {
-            font-size: 12px;
-            color: var(--text-secondary);
-            word-break: break-word;
-        }
-
-        .container-status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-left: 12px;
-            flex-shrink: 0;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .status-dot.running { background: #10b981; }
-        .status-dot.stopped { background: #ef4444; }
-        .status-dot.paused { background: #f59e0b; }
-
-        .container-status-text {
-            font-size: 12px;
-            color: var(--text-secondary);
-            text-transform: capitalize;
-        }
-
-        .container-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .container-detail {
+        .modal-content {
             background: var(--bg-secondary);
-            padding: 8px;
-            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            max-width: 400px;
+            margin: 20vh auto;
+            padding: 30px;
+            border-radius: 12px;
         }
 
-        .detail-label {
-            font-size: 10px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
-
-        .detail-value {
-            font-size: 12px;
+        .modal-title {
+            font-size: 20px;
+            margin-bottom: 24px;
             color: var(--text-primary);
             font-weight: 500;
         }
 
-        .container-actions {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .action-btn {
-            background: none;
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            transition: all 0.3s ease;
-            flex: 1;
-            min-width: 60px;
-        }
-
-        .action-btn:hover {
-            background: var(--hover-bg);
-        }
-
-        .action-btn.start {
-            border-color: #10b981;
-            color: #10b981;
-        }
-
-        .action-btn.start:hover {
-            background: rgba(16, 185, 129, 0.1);
-        }
-
-        .action-btn.stop {
-            border-color: #ef4444;
-            color: #ef4444;
-        }
-
-        .action-btn.stop:hover {
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        .action-btn.restart {
-            border-color: #f59e0b;
-            color: #f59e0b;
-        }
-
-        .action-btn.restart:hover {
-            background: rgba(245, 158, 11, 0.1);
-        }
-
-        .action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
+        .form-group {
+            margin-bottom: 20px;
         }
 
         .form-label {
@@ -661,7 +421,7 @@
         </div>
 
         <!-- System Monitoring Section -->
-        <div class="apps-section" style="margin-top: 20px;">
+        <div class="apps-section">
             <div class="apps-header">
                 <h2 class="apps-title">System Status</h2>
                 <button class="add-btn" onclick="refreshStats()">Refresh</button>
@@ -711,20 +471,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Docker Management Section -->
-        <div class="apps-section" style="margin-top: 20px;">
-            <div class="apps-header">
-                <h2 class="apps-title">Docker Containers</h2>
-                <div style="display: flex; gap: 8px;">
-                    <button class="add-btn" onclick="openDockerModal()">Add Container</button>
-                    <button class="add-btn" onclick="refreshContainers()">Refresh</button>
-                </div>
-            </div>
-            <div class="container-grid" id="containerGrid">
-                <!-- Containers will be loaded here -->
-            </div>
-        </div>
     </div>
 
     <!-- Add App Modal -->
@@ -742,70 +488,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Icon</label>
-                    <div class="icon-input-wrapper">
-                        <input type="text" class="form-input icon-input" id="appIcon" placeholder="🎬" maxlength="2">
-                        <button type="button" class="emoji-btn" onclick="toggleEmojiPicker()">📂</button>
-                    </div>
-                    <div class="emoji-picker" id="emojiPicker">
-                        <div class="emoji-category">
-                            <div class="emoji-category-title">Media & Entertainment</div>
-                            <div class="emoji-grid">
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🎬')">🎬</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📺')">📺</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🎵')">🎵</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🎮')">🎮</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📷')">📷</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📹')">📹</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🎯')">🎯</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🎨')">🎨</button>
-                            </div>
-                        </div>
-                        
-                        <div class="emoji-category">
-                            <div class="emoji-category-title">Tech & Development</div>
-                            <div class="emoji-grid">
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🐳')">🐳</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🛡️')">🛡️</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('⚙️')">⚙️</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🔧')">🔧</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('💻')">💻</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🖥️')">🖥️</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('⚡')">⚡</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🔌')">🔌</button>
-                            </div>
-                        </div>
-                        
-                        <div class="emoji-category">
-                            <div class="emoji-category-title">Files & Storage</div>
-                            <div class="emoji-grid">
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📁')">📁</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📊')">📊</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📋')">📋</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📂')">📂</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🗂️')">🗂️</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('💾')">💾</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🗄️')">🗄️</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📦')">📦</button>
-                            </div>
-                        </div>
-                        
-                        <div class="emoji-category">
-                            <div class="emoji-category-title">Communication</div>
-                            <div class="emoji-grid">
-                                <button type="button" class="emoji-option" onclick="selectEmoji('💬')">💬</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📧')">📧</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📞')">📞</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🌐')">🌐</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📱')">📱</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📡')">📡</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('🔗')">🔗</button>
-                                <button type="button" class="emoji-option" onclick="selectEmoji('📮')">📮</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                        Click the folder button to pick an emoji, or type a letter
-                    </div>
+                    <input type="text" class="form-input" id="appIcon" placeholder="🎬" maxlength="2">
                 </div>
                 <div class="modal-buttons">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -816,6 +499,13 @@
     </div>
 
     <script>
+        // Apps data
+        let apps = [
+            { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
+            { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
+            { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
+        ];
+
         // Theme management
         function initTheme() {
             const savedTheme = localStorage.getItem('homepage-theme') || 'dark';
@@ -846,12 +536,6 @@
         }
 
         // Apps management
-        let apps = [
-            { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
-            { name: 'Pi-hole', url: 'http://localhost/admin', icon: '🛡️' },
-            { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
-        ];
-
         function loadApps() {
             const saved = localStorage.getItem('homepage-apps');
             if (saved) {
@@ -870,12 +554,6 @@
 
         function renderApps() {
             const grid = document.getElementById('appsGrid');
-            if (!grid) {
-                console.error('Apps grid element not found');
-                return;
-            }
-            
-            console.log('Rendering', apps.length, 'apps');
             grid.innerHTML = '';
 
             apps.forEach((app, index) => {
@@ -891,12 +569,6 @@
                     <div class="app-name">${app.name}</div>
                     <button class="delete-btn" onclick="deleteApp(event, ${index})" title="Delete">×</button>
                 `;
-                
-                // Add drag event listeners
-                appElement.addEventListener('dragstart', handleDragStart);
-                appElement.addEventListener('dragover', handleDragOver);
-                appElement.addEventListener('drop', handleDrop);
-                appElement.addEventListener('dragend', handleDragEnd);
                 
                 grid.appendChild(appElement);
             });
@@ -923,161 +595,33 @@
             }
         }
 
-        // Emoji picker functionality
-        function toggleEmojiPicker() {
-            const picker = document.getElementById('emojiPicker');
-            picker.classList.toggle('show');
-        }
-
-        function selectEmoji(emoji) {
-            document.getElementById('appIcon').value = emoji;
-            document.getElementById('emojiPicker').classList.remove('show');
-        }
-
-        // Close emoji picker when clicking outside
-        document.addEventListener('click', function(e) {
-            const picker = document.getElementById('emojiPicker');
-            const emojiBtn = document.querySelector('.emoji-btn');
-            if (!picker.contains(e.target) && e.target !== emojiBtn) {
-                picker.classList.remove('show');
-            }
-        });
-
-        async function deployContainer(formData) {
+        // System monitoring
+        async function getSystemStats() {
             try {
-                console.log('Deploying container with data:', formData);
-                
-                const response = await fetch('/api/docker.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                console.log('Response status:', response.status);
-                const result = await response.json();
-                console.log('Deployment result:', result);
-                
-                if (result.success) {
-                    closeDockerModal();
-                    alert('Container deployed successfully!');
-                    setTimeout(() => {
-                        getContainers();
-                    }, 2000);
-                } else {
-                    alert(`Deployment failed: ${result.error || result.output || 'Unknown error'}`);
+                const response = await fetch('/api/stats.php');
+                if (response.ok) {
+                    const stats = await response.json();
+                    updateStatsDisplay(stats);
                 }
             } catch (error) {
-                console.error('Deployment error:', error);
-                alert(`Error: ${error.message}`);
+                console.log('Stats API not available');
             }
         }
 
-        // Docker modal functions
-        function openDockerModal() {
-            console.log('Opening Docker modal...');
-            const modal = document.getElementById('dockerModal');
-            if (modal) {
-                modal.style.display = 'block';
-                showDockerMethod('simple');
-                console.log('Docker modal opened');
-            } else {
-                console.error('Docker modal not found!');
-            }
+        function updateStatsDisplay(stats) {
+            document.getElementById('cpuTemp').textContent = `${stats.cpuTemp}°C`;
+            document.getElementById('fail2banCount').textContent = `${stats.fail2banCount} today`;
+            document.getElementById('cpuUsage').textContent = `${stats.cpuUsage}%`;
+            document.getElementById('memUsage').textContent = `${stats.memUsage}%`;
+            document.getElementById('diskUsage').textContent = `${stats.diskUsage}%`;
+            document.getElementById('uptime').textContent = `${stats.uptime} days`;
         }
 
-        function closeDockerModal() {
-            const modal = document.getElementById('dockerModal');
-            const simpleForm = document.getElementById('dockerSimpleForm');
-            const composeForm = document.getElementById('dockerComposeForm');
-            
-            if (modal) modal.style.display = 'none';
-            if (simpleForm) simpleForm.reset();
-            if (composeForm) composeForm.reset();
+        function refreshStats() {
+            getSystemStats();
         }
 
-        function showDockerMethod(method) {
-            const simpleForm = document.getElementById('dockerSimpleForm');
-            const composeForm = document.getElementById('dockerComposeForm');
-            const simpleBtn = document.getElementById('simpleBtn');
-            const composeBtn = document.getElementById('composeBtn');
-
-            if (method === 'simple') {
-                if (simpleForm) simpleForm.style.display = 'block';
-                if (composeForm) composeForm.style.display = 'none';
-                if (simpleBtn) {
-                    simpleBtn.style.background = 'var(--accent-color)';
-                    simpleBtn.style.color = 'white';
-                }
-                if (composeBtn) {
-                    composeBtn.style.background = 'none';
-                    composeBtn.style.color = 'var(--text-primary)';
-                }
-            } else {
-                if (simpleForm) simpleForm.style.display = 'none';
-                if (composeForm) composeForm.style.display = 'block';
-                if (composeBtn) {
-                    composeBtn.style.background = 'var(--accent-color)';
-                    composeBtn.style.color = 'white';
-                }
-                if (simpleBtn) {
-                    simpleBtn.style.background = 'none';
-                    simpleBtn.style.color = 'var(--text-primary)';
-                }
-            }
-        }
-
-        // Drag and drop functionality
-        let draggedElement = null;
-        let draggedIndex = null;
-
-        function handleDragStart(e) {
-            draggedElement = this;
-            draggedIndex = parseInt(this.dataset.index);
-            this.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        }
-
-        function handleDragOver(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
-            }
-            e.dataTransfer.dropEffect = 'move';
-            this.classList.add('drag-over');
-            return false;
-        }
-
-        function handleDrop(e) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            }
-
-            if (draggedElement !== this) {
-                const dropIndex = parseInt(this.dataset.index);
-                
-                // Reorder the apps array
-                const draggedApp = apps[draggedIndex];
-                apps.splice(draggedIndex, 1);
-                apps.splice(dropIndex, 0, draggedApp);
-                
-                saveApps();
-                renderApps();
-            }
-
-            return false;
-        }
-
-        function handleDragEnd(e) {
-            // Clean up
-            document.querySelectorAll('.app-item').forEach(item => {
-                item.classList.remove('dragging', 'drag-over');
-            });
-            draggedElement = null;
-            draggedIndex = null;
-        }
-
-        // Event listeners
+        // App form submission
         document.getElementById('addAppForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -1093,442 +637,27 @@
             }
         });
 
+        // Modal close on outside click
         document.getElementById('addModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeModal();
             }
         });
 
+        // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeModal();
             }
-            if (e.key === '/' && !e.target.matches('input')) {
-                e.preventDefault();
-                document.querySelector('.search-input').focus();
-            }
         });
 
-        // System monitoring functions
-        async function getSystemStats() {
-            try {
-                const response = await fetch('/api/stats.php');
-                if (response.ok) {
-                    const stats = await response.json();
-                    updateStatsDisplay(stats);
-                } else {
-                    console.log('API not available, using mock data');
-                    updateStatsDisplay(getMockStats());
-                }
-            } catch (error) {
-                console.log('Error fetching stats:', error);
-                updateStatsDisplay(getMockStats());
-            }
-        }
-
-        function getMockStats() {
-            return {
-                cpuTemp: Math.floor(Math.random() * 20 + 45), // 45-65°C
-                fail2banCount: Math.floor(Math.random() * 50),
-                cpuUsage: Math.floor(Math.random() * 30 + 10), // 10-40%
-                memUsage: Math.floor(Math.random() * 40 + 30), // 30-70%
-                diskUsage: Math.floor(Math.random() * 20 + 60), // 60-80%
-                uptime: Math.floor(Math.random() * 30 + 1) // 1-30 days
-            };
-        }
-
-        function updateStatsDisplay(stats) {
-            console.log('Updating stats display with:', stats);
-            
-            // Update CPU temp with color coding
-            const cpuTempEl = document.getElementById('cpuTemp');
-            if (cpuTempEl) {
-                cpuTempEl.textContent = `${stats.cpuTemp}°C`;
-                cpuTempEl.className = 'stat-value ' + (stats.cpuTemp > 70 ? 'status-error' : stats.cpuTemp > 60 ? 'status-warning' : 'status-good');
-            }
-
-            // Update fail2ban
-            const fail2banEl = document.getElementById('fail2banCount');
-            if (fail2banEl) {
-                fail2banEl.textContent = `${stats.fail2banCount} today`;
-                fail2banEl.className = 'stat-value ' + (stats.fail2banCount > 20 ? 'status-warning' : 'status-good');
-            }
-
-            // Update CPU usage
-            const cpuUsageEl = document.getElementById('cpuUsage');
-            if (cpuUsageEl) {
-                cpuUsageEl.textContent = `${stats.cpuUsage}%`;
-                cpuUsageEl.className = 'stat-value ' + (stats.cpuUsage > 80 ? 'status-error' : stats.cpuUsage > 60 ? 'status-warning' : 'status-good');
-            }
-
-            // Update memory usage
-            const memUsageEl = document.getElementById('memUsage');
-            if (memUsageEl) {
-                memUsageEl.textContent = `${stats.memUsage}%`;
-                memUsageEl.className = 'stat-value ' + (stats.memUsage > 85 ? 'status-error' : stats.memUsage > 70 ? 'status-warning' : 'status-good');
-            }
-
-            // Update disk usage
-            const diskUsageEl = document.getElementById('diskUsage');
-            if (diskUsageEl) {
-                diskUsageEl.textContent = `${stats.diskUsage}%`;
-                diskUsageEl.className = 'stat-value ' + (stats.diskUsage > 90 ? 'status-error' : stats.diskUsage > 80 ? 'status-warning' : 'status-good');
-            }
-
-            // Update uptime
-            const uptimeEl = document.getElementById('uptime');
-            if (uptimeEl) {
-                uptimeEl.textContent = `${stats.uptime} days`;
-            }
-        }
-
-        function refreshStats() {
-            // Show loading state
-            document.querySelectorAll('.stat-value').forEach(el => {
-                el.textContent = '...';
-                el.className = 'stat-value';
-            });
-            
-            setTimeout(() => {
-                getSystemStats();
-            }, 500);
-        }
-
-        // Docker management functions
-        async function getContainers() {
-            try {
-                console.log('Fetching containers...');
-                const response = await fetch('/api/docker.php');
-                if (response.ok) {
-                    const containers = await response.json();
-                    console.log('Containers received:', containers);
-                    updateContainerDisplay(containers);
-                } else {
-                    console.log('Docker API not available, using mock data');
-                    updateContainerDisplay(getMockContainers());
-                }
-            } catch (error) {
-                console.log('Error fetching containers:', error);
-                updateContainerDisplay(getMockContainers());
-            }
-        }
-
-        function getMockContainers() {
-            return [
-                {
-                    name: "plex",
-                    image: "plexinc/pms-docker",
-                    status: "running",
-                    ports: "32400:32400",
-                    uptime: "2d 14h",
-                    cpu: "12%",
-                    memory: "1.2GB"
-                },
-                {
-                    name: "pihole",
-                    image: "pihole/pihole",
-                    status: "running",
-                    ports: "80:80, 53:53",
-                    uptime: "5d 8h",
-                    cpu: "2%",
-                    memory: "156MB"
-                },
-                {
-                    name: "portainer",
-                    image: "portainer/portainer-ce",
-                    status: "running",
-                    ports: "9000:9000",
-                    uptime: "12d 3h",
-                    cpu: "1%",
-                    memory: "89MB"
-                },
-                {
-                    name: "nginx-backup",
-                    image: "nginx:alpine",
-                    status: "stopped",
-                    ports: "8080:80",
-                    uptime: "0s",
-                    cpu: "0%",
-                    memory: "0MB"
-                }
-            ];
-        }
-
-        function updateContainerDisplay(containers) {
-            const grid = document.getElementById('containerGrid');
-            if (!grid) {
-                console.error('Container grid element not found');
-                return;
-            }
-            
-            if (!containers || containers.length === 0) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">No containers found</div>';
-                return;
-            }
-
-            console.log('Updating container display with', containers.length, 'containers');
-            grid.innerHTML = containers.map(container => `
-                <div class="container-card">
-                    <div class="container-header">
-                        <div class="container-info">
-                            <div class="container-name">${container.name}</div>
-                            <div class="container-image">${container.image}</div>
-                        </div>
-                        <div class="container-status">
-                            <div class="status-dot ${container.status}"></div>
-                            <div class="container-status-text">${container.status}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="container-details">
-                        <div class="container-detail">
-                            <div class="detail-label">Ports</div>
-                            <div class="detail-value">${container.ports || 'None'}</div>
-                        </div>
-                        <div class="container-detail">
-                            <div class="detail-label">Uptime</div>
-                            <div class="detail-value">${container.uptime || '0s'}</div>
-                        </div>
-                        <div class="container-detail">
-                            <div class="detail-label">CPU</div>
-                            <div class="detail-value">${container.cpu || '0%'}</div>
-                        </div>
-                        <div class="container-detail">
-                            <div class="detail-label">Memory</div>
-                            <div class="detail-value">${container.memory || '0MB'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="container-actions">
-                        ${container.status === 'running' ? `
-                            <button class="action-btn stop" onclick="containerAction('${container.name}', 'stop')">Stop</button>
-                            <button class="action-btn restart" onclick="containerAction('${container.name}', 'restart')">Restart</button>
-                        ` : `
-                            <button class="action-btn start" onclick="containerAction('${container.name}', 'start')">Start</button>
-                        `}
-                        <button class="action-btn" onclick="containerLogs('${container.name}')">Logs</button>
-                        <button class="action-btn stop" onclick="removeContainer('${container.name}', false)">Remove</button>
-                        <button class="action-btn stop" onclick="removeContainer('${container.name}', true)" style="background: #dc2626;">Purge</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function containerAction(containerName, action) {
-            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} container "${containerName}"?`)) {
-                return;
-            }
-
-            try {
-                // Show loading state
-                const container = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
-                container.classList.add('loading');
-
-                const response = await fetch('/api/docker.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        container: containerName,
-                        action: action
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Refresh containers after action
-                    setTimeout(() => {
-                        getContainers();
-                    }, 1000);
-                } else {
-                    alert(`Failed to ${action} container: ${result.error || 'Unknown error'}`);
-                    container.classList.remove('loading');
-                }
-            } catch (error) {
-                alert(`Error: ${error.message}`);
-                container.classList.remove('loading');
-            }
-        }
-
-        function containerLogs(containerName) {
-            // Open logs in new window/tab
-            window.open(`/api/docker.php?logs=${containerName}`, '_blank');
-        }
-
-        async function removeContainer(containerName, purge = false) {
-            const action = purge ? 'purge (remove container + volumes + images)' : 'remove container';
-            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} "${containerName}"?`)) {
-                return;
-            }
-
-            try {
-                const container = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
-                container.classList.add('loading');
-
-                const response = await fetch('/api/docker.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        container: containerName,
-                        action: purge ? 'purge' : 'remove'
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    setTimeout(() => {
-                        getContainers();
-                    }, 1000);
-                } else {
-                    alert(`Failed to ${action}: ${result.error || 'Unknown error'}`);
-                    container.classList.remove('loading');
-                }
-            } catch (error) {
-                alert(`Error: ${error.message}`);
-                container.classList.remove('loading');
-            }
-        }
-
-        // Docker modal functions
-        function openDockerModal() {
-            console.log('Opening Docker modal...');
-            const modal = document.getElementById('dockerModal');
-            if (modal) {
-                modal.style.display = 'block';
-                showDockerMethod('simple');
-                console.log('Docker modal opened');
-            } else {
-                console.error('Docker modal not found!');
-            }
-        }
-
-        function closeDockerModal() {
-            document.getElementById('dockerModal').style.display = 'none';
-            document.getElementById('dockerSimpleForm').reset();
-            document.getElementById('dockerComposeForm').reset();
-        }
-
-        function showDockerMethod(method) {
-            const simpleForm = document.getElementById('dockerSimpleForm');
-            const composeForm = document.getElementById('dockerComposeForm');
-            const simpleBtn = document.getElementById('simpleBtn');
-            const composeBtn = document.getElementById('composeBtn');
-
-            if (method === 'simple') {
-                simpleForm.style.display = 'block';
-                composeForm.style.display = 'none';
-                simpleBtn.style.background = 'var(--accent-color)';
-                simpleBtn.style.color = 'white';
-                composeBtn.style.background = 'none';
-                composeBtn.style.color = 'var(--text-primary)';
-            } else {
-                simpleForm.style.display = 'none';
-                composeForm.style.display = 'block';
-                composeBtn.style.background = 'var(--accent-color)';
-                composeBtn.style.color = 'white';
-                simpleBtn.style.background = 'none';
-                simpleBtn.style.color = 'var(--text-primary)';
-            }
-        }
-
-        // Handle Docker deployment forms
-        document.getElementById('dockerSimpleForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                action: 'deploy',
-                method: 'simple',
-                name: document.getElementById('dockerName').value.trim(),
-                image: document.getElementById('dockerImage').value.trim(),
-                ports: document.getElementById('dockerPorts').value.trim(),
-                env: document.getElementById('dockerEnv').value.trim(),
-                volumes: document.getElementById('dockerVolumes').value.trim()
-            };
-            
-            await deployContainer(formData);
-        });
-
-        document.getElementById('dockerComposeForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                action: 'deploy',
-                method: 'compose',
-                compose: document.getElementById('dockerCompose').value.trim()
-            };
-            
-            await deployContainer(formData);
-        });
-
-        async function deployContainer(formData) {
-            try {
-                console.log('Deploying container with data:', formData);
-                
-                const response = await fetch('/api/docker.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                console.log('Response status:', response.status);
-                const result = await response.json();
-                console.log('Deployment result:', result);
-                
-                if (result.success) {
-                    closeDockerModal();
-                    alert('Container deployed successfully!');
-                    setTimeout(() => {
-                        getContainers();
-                    }, 2000);
-                } else {
-                    alert(`Deployment failed: ${result.error || result.output || 'Unknown error'}`);
-                }
-            } catch (error) {
-                console.error('Deployment error:', error);
-                alert(`Error: ${error.message}`);
-            }
-        }
-
-        function refreshContainers() {
-            // Show loading state
-            document.getElementById('containerGrid').style.opacity = '0.6';
-            
-            setTimeout(() => {
-                getContainers();
-                document.getElementById('containerGrid').style.opacity = '1';
-            }, 500);
-        }
-
-        // Close docker modal when clicking outside
-        document.getElementById('dockerModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeDockerModal();
-            }
-        });
-
-        // Initialize when DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, initializing...');
-            initTheme();
-            loadApps();
-            
-            // Load system stats and containers
-            getSystemStats();
-            getContainers();
-            
-            // Auto-refresh stats every 30 seconds
-            setInterval(getSystemStats, 30000);
-            
-            // Auto-refresh containers every 60 seconds
-            setInterval(getContainers, 60000);
-        });
+        // Initialize everything
+        initTheme();
+        loadApps();
+        getSystemStats();
+        
+        // Auto-refresh stats every 30 seconds
+        setInterval(getSystemStats, 30000);
     </script>
 </body>
 </html>
