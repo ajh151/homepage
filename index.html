@@ -621,6 +621,91 @@
             background: var(--hover-bg);
         }
 
+        .icon-input-wrapper {
+            display: flex;
+            gap: 8px;
+            position: relative;
+        }
+
+        .icon-input {
+            flex: 1;
+        }
+
+        .emoji-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .emoji-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        .emoji-picker {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: none;
+            z-index: 1001;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 300px;
+        }
+
+        .emoji-picker.show {
+            display: block;
+        }
+
+        .emoji-category {
+            margin-bottom: 16px;
+        }
+
+        .emoji-category:last-child {
+            margin-bottom: 0;
+        }
+
+        .emoji-category-title {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .emoji-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .emoji-option {
+            background: none;
+            border: none;
+            font-size: 18px;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+
+        .emoji-option:hover {
+            background: var(--hover-bg);
+        }
+
         @media (max-width: 480px) {
             body {
                 padding: 20px 16px;
@@ -761,7 +846,70 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Icon</label>
-                    <input type="text" class="form-input" id="appIcon" placeholder="🎬" maxlength="2">
+                    <div class="icon-input-wrapper">
+                        <input type="text" class="form-input icon-input" id="appIcon" placeholder="🎬" maxlength="2">
+                        <button type="button" class="emoji-btn" onclick="toggleEmojiPicker()">📂</button>
+                        <div class="emoji-picker" id="emojiPicker">
+                            <div class="emoji-category">
+                                <div class="emoji-category-title">Media</div>
+                                <div class="emoji-grid">
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🎬')">🎬</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📺')">📺</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🎵')">🎵</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🎮')">🎮</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📷')">📷</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📹')">📹</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🎨')">🎨</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📻')">📻</button>
+                                </div>
+                            </div>
+                            
+                            <div class="emoji-category">
+                                <div class="emoji-category-title">Tech</div>
+                                <div class="emoji-grid">
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🐳')">🐳</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🛡️')">🛡️</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('⚙️')">⚙️</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🔧')">🔧</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('💻')">💻</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🖥️')">🖥️</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('⚡')">⚡</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🔌')">🔌</button>
+                                </div>
+                            </div>
+                            
+                            <div class="emoji-category">
+                                <div class="emoji-category-title">Files</div>
+                                <div class="emoji-grid">
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📁')">📁</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📊')">📊</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📋')">📋</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📂')">📂</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🗂️')">🗂️</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('💾')">💾</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🗄️')">🗄️</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📦')">📦</button>
+                                </div>
+                            </div>
+                            
+                            <div class="emoji-category">
+                                <div class="emoji-category-title">Communication</div>
+                                <div class="emoji-grid">
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('💬')">💬</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📧')">📧</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📞')">📞</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🌐')">🌐</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📱')">📱</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📡')">📡</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('🔗')">🔗</button>
+                                    <button type="button" class="emoji-option" onclick="selectEmoji('📮')">📮</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Click the folder button to pick an emoji, or type a letter
+                    </div>
                 </div>
                 <div class="modal-buttons">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -1059,6 +1207,31 @@
         function closeModal() {
             document.getElementById('addModal').style.display = 'none';
             document.getElementById('addAppForm').reset();
+            // Close emoji picker when modal closes
+            const picker = document.getElementById('emojiPicker');
+            if (picker) picker.classList.remove('show');
+        }
+
+        // Emoji picker functions
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            if (picker) {
+                picker.classList.toggle('show');
+                console.log('Emoji picker toggled');
+            }
+        }
+
+        function selectEmoji(emoji) {
+            const input = document.getElementById('appIcon');
+            const picker = document.getElementById('emojiPicker');
+            
+            if (input) {
+                input.value = emoji;
+                console.log('Selected emoji:', emoji);
+            }
+            if (picker) {
+                picker.classList.remove('show');
+            }
         }
 
         function deleteApp(event, index) {
@@ -1455,6 +1628,16 @@
         document.getElementById('settingsModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeSettings();
+            }
+        });
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', function(e) {
+            const picker = document.getElementById('emojiPicker');
+            const emojiBtn = document.querySelector('.emoji-btn');
+            
+            if (picker && !picker.contains(e.target) && e.target !== emojiBtn) {
+                picker.classList.remove('show');
             }
         });
 
