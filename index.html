@@ -1091,9 +1091,11 @@
         // Docker management functions
         async function getContainers() {
             try {
+                console.log('Fetching containers...');
                 const response = await fetch('/api/docker.php');
                 if (response.ok) {
                     const containers = await response.json();
+                    console.log('Containers received:', containers);
                     updateContainerDisplay(containers);
                 } else {
                     console.log('Docker API not available, using mock data');
@@ -1282,8 +1284,15 @@
 
         // Docker modal functions
         function openDockerModal() {
-            document.getElementById('dockerModal').style.display = 'block';
-            showDockerMethod('simple');
+            console.log('Opening Docker modal...');
+            const modal = document.getElementById('dockerModal');
+            if (modal) {
+                modal.style.display = 'block';
+                showDockerMethod('simple');
+                console.log('Docker modal opened');
+            } else {
+                console.error('Docker modal not found!');
+            }
         }
 
         function closeDockerModal() {
@@ -1346,6 +1355,8 @@
 
         async function deployContainer(formData) {
             try {
+                console.log('Deploying container with data:', formData);
+                
                 const response = await fetch('/api/docker.php', {
                     method: 'POST',
                     headers: {
@@ -1354,7 +1365,9 @@
                     body: JSON.stringify(formData)
                 });
 
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Deployment result:', result);
                 
                 if (result.success) {
                     closeDockerModal();
@@ -1363,9 +1376,10 @@
                         getContainers();
                     }, 2000);
                 } else {
-                    alert(`Deployment failed: ${result.error || 'Unknown error'}`);
+                    alert(`Deployment failed: ${result.error || result.output || 'Unknown error'}`);
                 }
             } catch (error) {
+                console.error('Deployment error:', error);
                 alert(`Error: ${error.message}`);
             }
         }
@@ -1390,8 +1404,12 @@
         // Initialize
         initTheme();
         loadApps();
-        getSystemStats();
-        getContainers();
+        
+        // Load system stats and containers with a slight delay to ensure page is ready
+        setTimeout(() => {
+            getSystemStats();
+            getContainers();
+        }, 100);
         
         // Auto-refresh stats every 30 seconds
         setInterval(getSystemStats, 30000);
