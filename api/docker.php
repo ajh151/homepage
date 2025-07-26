@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 function getContainers() {
-    $cmd = "docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'";
+    $cmd = "sudo /snap/bin/docker ps -a --format 'json' 2>&1";
     $output = shell_exec($cmd);
     
     if (!$output) {
@@ -17,41 +17,44 @@ function getContainers() {
     }
     
     $lines = explode("\n", trim($output));
-    array_shift($lines); // Remove header
-    
     $containers = [];
+    
     foreach ($lines as $line) {
         if (trim($line) === '') continue;
         
-        $parts = explode("\t", $line);
-        if (count($parts) >= 4) {
-            $name = trim($parts[0]);
-            $image = trim($parts[1]);
-            $status = trim($parts[2]);
-            $ports = trim($parts[3]);
+        $data = json_decode($line, true);
+        if ($data) {
+            $name = $data['Names'];
+            $image = $data['Image'];
+            $status = $data['Status'];
+            $ports = $data['Ports'] ?? 'none';
             
-            // Parse status
+            // Parse status for running state
             $isRunning = strpos($status, 'Up') === 0;
             $statusText = $isRunning ? 'running' : 'stopped';
             
-            // Get uptime
-            $uptime = $isRunning ? substr($status, 3) : '0s';
+            // Extract uptime (remove "Up " prefix and clean up)
+            $uptime = $status;
+            if ($isRunning) {
+                $uptime = preg_replace('/^Up\s+/', '', $status);
+                $uptime = preg_replace('/\s+\(.*?\)$/', '', $uptime); // Remove health status
+            }
             
-            // Get resource usage for running containers
+            // Get CPU and Memory stats for running containers
             $cpu = '0%';
             $memory = '0MB';
             
             if ($isRunning) {
-                $statsCmd = "docker stats --no-stream --format 'table {{.CPUPerc}}\t{{.MemUsage}}' $name 2>/dev/null";
+                $statsCmd = "sudo /snap/bin/docker stats --no-stream --format 'json' $name 2>/dev/null";
                 $statsOutput = shell_exec($statsCmd);
                 if ($statsOutput) {
-                    $statsLines = explode("\n", trim($statsOutput));
-                    if (count($statsLines) > 1) {
-                        $statsParts = explode("\t", $statsLines[1]);
-                        if (count($statsParts) >= 2) {
-                            $cpu = trim($statsParts[0]);
-                            $memoryParts = explode(" / ", trim($statsParts[1]));
-                            $memory = trim($memoryParts[0]);
+                    $statsData = json_decode(trim($statsOutput), true);
+                    if ($statsData) {
+                        $cpu = $statsData['CPUPerc'] ?? '0%';
+                        $memory = $statsData['MemUsage'] ?? '0MB';
+                        // Extract just the used memory part
+                        if (strpos($memory, '/') !== false) {
+                            $memory = explode('/', $memory)[0];
                         }
                     }
                 }
@@ -64,7 +67,7 @@ function getContainers() {
                 'ports' => $ports,
                 'uptime' => $uptime,
                 'cpu' => $cpu,
-                'memory' => $memory
+                'memory' => trim($memory)
             ];
         }
     }
@@ -73,36 +76,113 @@ function getContainers() {
 }
 
 function executeDockerAction($container, $action) {
-    $allowedActions = ['start', 'stop', 'restart'];
+    $allowedActions = ['start', 'stop', 'restart', 'remove', 'purge'];
     
     if (!in_array($action, $allowedActions)) {
         return ['success' => false, 'error' => 'Invalid action'];
     }
     
-    // Sanitize container name
     $container = preg_replace('/[^a-zA-Z0-9_-]/', '', $container);
     
-    $cmd = "docker $action $container 2>&1";
+    if ($action === 'remove') {
+        $cmd = "sudo /snap/bin/docker rm -f $container 2>&1";
+    } elseif ($action === 'purge') {
+        // Stop and remove container, then remove associated volumes and images
+        $image = shell_exec("sudo /snap/bin/docker inspect --format='{{.Config.Image}}' $container 2>/dev/null");
+        $image = trim($image);
+        
+        $commands = [
+            "sudo /snap/bin/docker stop $container 2>/dev/null",
+            "sudo /snap/bin/docker rm -f $container 2>/dev/null",
+            "sudo /snap/bin/docker volume prune -f 2>/dev/null"
+        ];
+        
+        if ($image && $image !== '') {
+            $commands[] = "sudo /snap/bin/docker rmi $image 2>/dev/null";
+        }
+        
+        $output = '';
+        foreach ($commands as $cmd) {
+            $output .= shell_exec($cmd) . "\n";
+        }
+        
+        return [
+            'success' => true,
+            'output' => $output
+        ];
+    } else {
+        $cmd = "sudo /snap/bin/docker $action $container 2>&1";
+    }
+    
     $output = shell_exec($cmd);
     
-    // Check if command was successful
-    $exitCode = 0;
-    exec("docker $action $container", $dummy, $exitCode);
+    return [
+        'success' => strpos($output, 'Error') === false && strpos($output, 'error') === false,
+        'output' => $output
+    ];
+}
+
+function deployContainer($data) {
+    if ($data['method'] === 'simple') {
+        $name = preg_replace('/[^a-zA-Z0-9_-]/', '', $data['name']);
+        $image = $data['image'];
+        
+        $cmd = "sudo /snap/bin/docker run -d --name $name";
+        
+        // Add ports
+        if (!empty($data['ports'])) {
+            $cmd .= " -p " . escapeshellarg($data['ports']);
+        }
+        
+        // Add environment variables
+        if (!empty($data['env'])) {
+            $envLines = explode("\n", $data['env']);
+            foreach ($envLines as $env) {
+                $env = trim($env);
+                if (!empty($env) && strpos($env, '=') !== false) {
+                    $cmd .= " -e " . escapeshellarg($env);
+                }
+            }
+        }
+        
+        // Add volumes
+        if (!empty($data['volumes'])) {
+            $cmd .= " -v " . escapeshellarg($data['volumes']);
+        }
+        
+        $cmd .= " " . escapeshellarg($image) . " 2>&1";
+        
+    } elseif ($data['method'] === 'compose') {
+        // Create temporary compose file
+        $composeFile = '/tmp/docker-compose-' . uniqid() . '.yml';
+        file_put_contents($composeFile, $data['compose']);
+        
+        $cmd = "cd /tmp && sudo /snap/bin/docker-compose -f $composeFile up -d 2>&1";
+        
+        $output = shell_exec($cmd);
+        unlink($composeFile);
+        
+        return [
+            'success' => strpos($output, 'Error') === false && strpos($output, 'error') === false,
+            'output' => $output
+        ];
+    }
+    
+    $output = shell_exec($cmd);
     
     return [
-        'success' => $exitCode === 0,
-        'output' => $output,
-        'error' => $exitCode !== 0 ? $output : null
+        'success' => strpos($output, 'Error') === false && strpos($output, 'error') === false,
+        'output' => $output
     ];
 }
 
 function getContainerLogs($container) {
     $container = preg_replace('/[^a-zA-Z0-9_-]/', '', $container);
-    $cmd = "docker logs --tail 100 $container 2>&1";
+    $cmd = "sudo /snap/bin/docker logs --tail 100 $container 2>&1";
     return shell_exec($cmd);
 }
 
-// Handle different request types
+// Handle requests
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['logs'])) {
         $logs = getContainerLogs($_GET['logs']);
@@ -115,11 +195,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     
-    if (isset($input['container']) && isset($input['action'])) {
-        $result = executeDockerAction($input['container'], $input['action']);
-        echo json_encode($result);
+    if (isset($input['action'])) {
+        if ($input['action'] === 'deploy') {
+            $result = deployContainer($input);
+            echo json_encode($result);
+        } elseif (isset($input['container'])) {
+            $result = executeDockerAction($input['container'], $input['action']);
+            echo json_encode($result);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Missing parameters']);
+        }
     } else {
-        echo json_encode(['success' => false, 'error' => 'Missing parameters']);
+        echo json_encode(['success' => false, 'error' => 'No action specified']);
     }
 }
 ?>
