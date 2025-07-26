@@ -585,6 +585,27 @@
             color: var(--text-secondary);
         }
 
+        select.form-input {
+            cursor: pointer;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
         .modal-buttons {
             display: flex;
             gap: 12px;
@@ -649,10 +670,15 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div class="logo">Home</div>
-            <button class="theme-toggle" onclick="toggleTheme()">
-                <span id="theme-icon">☀️</span>
-            </button>
+            <div class="logo" id="pageTitle">Home</div>
+            <div style="display: flex; gap: 8px;">
+                <button class="theme-toggle" onclick="openSettings()">
+                    <span>⚙️</span>
+                </button>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <span id="theme-icon">☀️</span>
+                </button>
+            </div>
         </div>
 
         <!-- Search Section -->
@@ -825,6 +851,78 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 class="modal-title">Settings</h3>
+            
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label class="form-label">Page Title</label>
+                    <input type="text" class="form-input" id="settingsTitle" placeholder="Home" value="Home">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        The title shown in the top-left corner
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Search Engine</label>
+                    <select class="form-input" id="settingsSearchEngine">
+                        <option value="google">Google</option>
+                        <option value="duckduckgo">DuckDuckGo</option>
+                        <option value="bing">Bing</option>
+                        <option value="startpage">Startpage</option>
+                    </select>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Default search engine for the search bar
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Auto-refresh Intervals</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div>
+                            <label class="form-label" style="font-size: 12px; margin-bottom: 4px;">System Stats (seconds)</label>
+                            <input type="number" class="form-input" id="settingsStatsInterval" value="30" min="5" max="300">
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-size: 12px; margin-bottom: 4px;">Docker (seconds)</label>
+                            <input type="number" class="form-input" id="settingsDockerInterval" value="60" min="10" max="600">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Default Theme</label>
+                    <select class="form-input" id="settingsDefaultTheme">
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Show Sections</label>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                            <input type="checkbox" id="showSystemStats" checked>
+                            <span>System Status</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                            <input type="checkbox" id="showDockerContainers" checked>
+                            <span>Docker Containers</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="resetSettings()">Reset to Defaults</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Status Bar -->
     <div class="status-bar" id="statusBar">
         <div class="status-content">
@@ -888,6 +986,89 @@
         function hideStatus() {
             const statusBar = document.getElementById('statusBar');
             statusBar.classList.remove('show');
+        }
+
+        // Settings management
+        function loadSettings() {
+            const saved = localStorage.getItem('homepage-settings');
+            if (saved) {
+                try {
+                    settings = { ...settings, ...JSON.parse(saved) };
+                } catch (e) {
+                    console.error('Error loading settings:', e);
+                }
+            }
+            applySettings();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('homepage-settings', JSON.stringify(settings));
+            applySettings();
+        }
+
+        function applySettings() {
+            // Update page title
+            document.getElementById('pageTitle').textContent = settings.title;
+            document.title = settings.title;
+
+            // Update search form
+            const searchForm = document.querySelector('.search-form');
+            searchForm.action = searchEngines[settings.searchEngine];
+
+            // Show/hide sections
+            const systemStatsSection = document.querySelector('.apps-section:nth-of-type(2)');
+            const dockerSection = document.querySelector('.apps-section:nth-of-type(3)');
+            
+            if (systemStatsSection) {
+                systemStatsSection.style.display = settings.showSystemStats ? 'block' : 'none';
+            }
+            if (dockerSection) {
+                dockerSection.style.display = settings.showDockerContainers ? 'block' : 'none';
+            }
+
+            // Apply theme
+            const savedTheme = localStorage.getItem('homepage-theme') || settings.defaultTheme;
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.getElementById('theme-icon').textContent = '🌙';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                document.getElementById('theme-icon').textContent = '☀️';
+            }
+        }
+
+        function openSettings() {
+            // Load current settings into form
+            document.getElementById('settingsTitle').value = settings.title;
+            document.getElementById('settingsSearchEngine').value = settings.searchEngine;
+            document.getElementById('settingsStatsInterval').value = settings.statsInterval;
+            document.getElementById('settingsDockerInterval').value = settings.dockerInterval;
+            document.getElementById('settingsDefaultTheme').value = settings.defaultTheme;
+            document.getElementById('showSystemStats').checked = settings.showSystemStats;
+            document.getElementById('showDockerContainers').checked = settings.showDockerContainers;
+
+            document.getElementById('settingsModal').style.display = 'block';
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function resetSettings() {
+            if (confirm('Reset all settings to defaults? This cannot be undone.')) {
+                settings = {
+                    title: 'Home',
+                    searchEngine: 'google',
+                    statsInterval: 30,
+                    dockerInterval: 60,
+                    defaultTheme: 'dark',
+                    showSystemStats: true,
+                    showDockerContainers: true
+                };
+                saveSettings();
+                openSettings(); // Refresh the form
+                showStatus('success', 'Settings reset to defaults');
+            }
         }
 
         // Theme management
@@ -1393,6 +1574,34 @@
             }
         });
 
+        // Settings modal event listeners
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
+            }
+        });
+
+        // Settings form submission
+        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Update settings from form
+            settings.title = document.getElementById('settingsTitle').value.trim() || 'Home';
+            settings.searchEngine = document.getElementById('settingsSearchEngine').value;
+            settings.statsInterval = parseInt(document.getElementById('settingsStatsInterval').value) || 30;
+            settings.dockerInterval = parseInt(document.getElementById('settingsDockerInterval').value) || 60;
+            settings.defaultTheme = document.getElementById('settingsDefaultTheme').value;
+            settings.showSystemStats = document.getElementById('showSystemStats').checked;
+            settings.showDockerContainers = document.getElementById('showDockerContainers').checked;
+            
+            saveSettings();
+            closeSettings();
+            showStatus('success', 'Settings saved successfully!');
+            
+            // Restart intervals with new timings
+            location.reload(); // Simple way to restart with new intervals
+        });
+
         // Docker form submissions
         document.getElementById('dockerSimpleForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -1427,6 +1636,7 @@
             if (e.key === 'Escape') {
                 closeModal();
                 closeDockerModal();
+                closeSettings();
             }
         });
 
