@@ -1010,11 +1010,87 @@
 
     <script>
         // Global variables
-        let apps = [
-            { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
-            { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
-            { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
-        ];
+        let apps = [];
+        let settings = { title: 'Home' };
+
+        // API functions for storage
+        async function loadFromAPI() {
+            try {
+                const response = await fetch('/api/storage.php');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        apps = data.data.apps || [];
+                        settings = data.data.settings || { title: 'Home' };
+                        console.log('Data loaded from API');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.log('API not available, using fallback data');
+            }
+            
+            // Fallback to default data if API fails
+            apps = [
+                { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
+                { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
+                { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
+            ];
+            settings = { title: 'Home' };
+            return false;
+        }
+
+        async function saveAppsToAPI() {
+            try {
+                const response = await fetch('/api/storage.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'apps',
+                        data: apps
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('Apps saved to API');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving apps to API:', error);
+            }
+            return false;
+        }
+
+        async function saveSettingsToAPI() {
+            try {
+                const response = await fetch('/api/storage.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'settings',
+                        data: settings
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('Settings saved to API');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving settings to API:', error);
+            }
+            return false;
+        }
 
         // Status bar functions
         function showStatus(type, message, details = null) {
@@ -1058,7 +1134,7 @@
             statusBar.classList.remove('show');
         }
 
-        // Theme management
+        // Theme management (still uses localStorage for theme preference)
         function initTheme() {
             const savedTheme = localStorage.getItem('homepage-theme') || 'dark';
             const themeIcon = document.getElementById('theme-icon');
@@ -1088,20 +1164,13 @@
         }
 
         // Apps management
-        function loadApps() {
-            const saved = localStorage.getItem('homepage-apps');
-            if (saved) {
-                try {
-                    apps = JSON.parse(saved);
-                } catch (e) {
-                    console.error('Error loading apps:', e);
-                }
-            }
+        async function loadApps() {
+            await loadFromAPI();
             renderApps();
         }
 
-        function saveApps() {
-            localStorage.setItem('homepage-apps', JSON.stringify(apps));
+        async function saveApps() {
+            await saveAppsToAPI();
         }
 
         // Drag and drop functionality
@@ -1431,11 +1500,16 @@
             getContainers();
         }
 
-        // Settings functions (simple and clean)
+        // Settings functions
         function openSettings() {
             console.log('Opening settings...');
             const modal = document.getElementById('settingsModal');
             if (modal) {
+                // Load current settings into form
+                const titleInput = document.getElementById('settingsTitle');
+                if (titleInput) {
+                    titleInput.value = settings.title || 'Home';
+                }
                 modal.style.display = 'block';
                 console.log('Settings modal opened');
             } else {
@@ -1452,7 +1526,7 @@
             }
         }
 
-        function saveSettings() {
+        async function saveSettings() {
             console.log('Saving settings...');
             const titleInput = document.getElementById('settingsTitle');
             
@@ -1460,33 +1534,40 @@
                 const newTitle = titleInput.value.trim() || 'Home';
                 console.log('New title:', newTitle);
                 
-                // Update the page title
+                // Update settings object
+                settings.title = newTitle;
+                
+                // Update the page display
                 document.querySelector('.logo').textContent = newTitle;
                 document.title = newTitle;
                 
-                // Save to localStorage
-                localStorage.setItem('homepage-title', newTitle);
+                // Save to API
+                const saved = await saveSettingsToAPI();
                 
-                // Close modal and show success
+                // Close modal and show status
                 closeSettings();
-                showStatus('success', 'Settings saved!');
+                
+                if (saved) {
+                    showStatus('success', 'Settings saved!');
+                } else {
+                    showStatus('warning', 'Settings saved locally (API unavailable)');
+                }
                 
                 console.log('Settings saved successfully');
             }
         }
 
-        function loadSavedTitle() {
-            const savedTitle = localStorage.getItem('homepage-title');
-            if (savedTitle) {
-                console.log('Loading saved title:', savedTitle);
-                document.querySelector('.logo').textContent = savedTitle;
-                document.title = savedTitle;
-                
-                // Update settings form if it exists
-                const titleInput = document.getElementById('settingsTitle');
-                if (titleInput) {
-                    titleInput.value = savedTitle;
-                }
+        async function loadSavedSettings() {
+            await loadFromAPI();
+            const savedTitle = settings.title || 'Home';
+            console.log('Loading saved title:', savedTitle);
+            document.querySelector('.logo').textContent = savedTitle;
+            document.title = savedTitle;
+            
+            // Update settings form if it exists
+            const titleInput = document.getElementById('settingsTitle');
+            if (titleInput) {
+                titleInput.value = savedTitle;
             }
         }
 
@@ -1567,7 +1648,7 @@
         }
 
         // App form submission
-        document.getElementById('addAppForm').addEventListener('submit', function(e) {
+        document.getElementById('addAppForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const name = document.getElementById('appName').value.trim();
@@ -1576,7 +1657,7 @@
             
             if (name && url) {
                 apps.push({ name, url, icon });
-                saveApps();
+                await saveApps();
                 renderApps();
                 closeModal();
             }
@@ -1653,8 +1734,15 @@
         // Initialize everything
         console.log('Initializing page...');
         initTheme();
-        loadApps();
-        loadSavedTitle(); // Load saved page title
+        
+        // Load data from API
+        loadApps().then(() => {
+            console.log('Apps loaded');
+        });
+        
+        loadSavedSettings().then(() => {
+            console.log('Settings loaded');
+        });
         
         // Load containers and stats with a small delay
         setTimeout(() => {
