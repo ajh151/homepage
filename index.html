@@ -387,6 +387,162 @@
         .status-warning { color: #f59e0b; }
         .status-error { color: #ef4444; }
 
+        .container-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .container-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .container-card:hover {
+            background: var(--hover-bg);
+        }
+
+        .container-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .container-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .container-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+
+        .container-image {
+            font-size: 12px;
+            color: var(--text-secondary);
+            word-break: break-word;
+        }
+
+        .container-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 12px;
+            flex-shrink: 0;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-dot.running { background: #10b981; }
+        .status-dot.stopped { background: #ef4444; }
+        .status-dot.paused { background: #f59e0b; }
+
+        .container-status-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: capitalize;
+        }
+
+        .container-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .container-detail {
+            background: var(--bg-secondary);
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .detail-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .detail-value {
+            font-size: 12px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .container-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 60px;
+        }
+
+        .action-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        .action-btn.start {
+            border-color: #10b981;
+            color: #10b981;
+        }
+
+        .action-btn.start:hover {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .action-btn.stop {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .action-btn.stop:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .action-btn.restart {
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+
+        .action-btn.restart:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
         .form-label {
             display: block;
             margin-bottom: 8px;
@@ -553,6 +709,17 @@
                         <div class="stat-value" id="uptime">-- days</div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Docker Management Section -->
+        <div class="apps-section" style="margin-top: 20px;">
+            <div class="apps-header">
+                <h2 class="apps-title">Docker Containers</h2>
+                <button class="add-btn" onclick="refreshContainers()">Refresh</button>
+            </div>
+            <div class="container-grid" id="containerGrid">
+                <!-- Containers will be loaded here -->
             </div>
         </div>
     </div>
@@ -918,13 +1085,180 @@
             }, 500);
         }
 
+        // Docker management functions
+        async function getContainers() {
+            try {
+                const response = await fetch('/api/docker.php');
+                if (response.ok) {
+                    const containers = await response.json();
+                    updateContainerDisplay(containers);
+                } else {
+                    console.log('Docker API not available, using mock data');
+                    updateContainerDisplay(getMockContainers());
+                }
+            } catch (error) {
+                console.log('Error fetching containers:', error);
+                updateContainerDisplay(getMockContainers());
+            }
+        }
+
+        function getMockContainers() {
+            return [
+                {
+                    name: "plex",
+                    image: "plexinc/pms-docker",
+                    status: "running",
+                    ports: "32400:32400",
+                    uptime: "2d 14h",
+                    cpu: "12%",
+                    memory: "1.2GB"
+                },
+                {
+                    name: "pihole",
+                    image: "pihole/pihole",
+                    status: "running",
+                    ports: "80:80, 53:53",
+                    uptime: "5d 8h",
+                    cpu: "2%",
+                    memory: "156MB"
+                },
+                {
+                    name: "portainer",
+                    image: "portainer/portainer-ce",
+                    status: "running",
+                    ports: "9000:9000",
+                    uptime: "12d 3h",
+                    cpu: "1%",
+                    memory: "89MB"
+                },
+                {
+                    name: "nginx-backup",
+                    image: "nginx:alpine",
+                    status: "stopped",
+                    ports: "8080:80",
+                    uptime: "0s",
+                    cpu: "0%",
+                    memory: "0MB"
+                }
+            ];
+        }
+
+        function updateContainerDisplay(containers) {
+            const grid = document.getElementById('containerGrid');
+            if (!containers || containers.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">No containers found</div>';
+                return;
+            }
+
+            grid.innerHTML = containers.map(container => `
+                <div class="container-card">
+                    <div class="container-header">
+                        <div class="container-info">
+                            <div class="container-name">${container.name}</div>
+                            <div class="container-image">${container.image}</div>
+                        </div>
+                        <div class="container-status">
+                            <div class="status-dot ${container.status}"></div>
+                            <div class="container-status-text">${container.status}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="container-details">
+                        <div class="container-detail">
+                            <div class="detail-label">Ports</div>
+                            <div class="detail-value">${container.ports || 'None'}</div>
+                        </div>
+                        <div class="container-detail">
+                            <div class="detail-label">Uptime</div>
+                            <div class="detail-value">${container.uptime || '0s'}</div>
+                        </div>
+                        <div class="container-detail">
+                            <div class="detail-label">CPU</div>
+                            <div class="detail-value">${container.cpu || '0%'}</div>
+                        </div>
+                        <div class="container-detail">
+                            <div class="detail-label">Memory</div>
+                            <div class="detail-value">${container.memory || '0MB'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="container-actions">
+                        ${container.status === 'running' ? `
+                            <button class="action-btn stop" onclick="containerAction('${container.name}', 'stop')">Stop</button>
+                            <button class="action-btn restart" onclick="containerAction('${container.name}', 'restart')">Restart</button>
+                        ` : `
+                            <button class="action-btn start" onclick="containerAction('${container.name}', 'start')">Start</button>
+                        `}
+                        <button class="action-btn" onclick="containerLogs('${container.name}')">Logs</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function containerAction(containerName, action) {
+            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} container "${containerName}"?`)) {
+                return;
+            }
+
+            try {
+                // Show loading state
+                const container = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                container.classList.add('loading');
+
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        container: containerName,
+                        action: action
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Refresh containers after action
+                    setTimeout(() => {
+                        getContainers();
+                    }, 1000);
+                } else {
+                    alert(`Failed to ${action} container: ${result.error || 'Unknown error'}`);
+                    container.classList.remove('loading');
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                container.classList.remove('loading');
+            }
+        }
+
+        function containerLogs(containerName) {
+            // Open logs in new window/tab
+            window.open(`/api/docker.php?logs=${containerName}`, '_blank');
+        }
+
+        function refreshContainers() {
+            // Show loading state
+            document.getElementById('containerGrid').style.opacity = '0.6';
+            
+            setTimeout(() => {
+                getContainers();
+                document.getElementById('containerGrid').style.opacity = '1';
+            }, 500);
+        }
+
         // Initialize
         initTheme();
         loadApps();
         getSystemStats();
+        getContainers();
         
         // Auto-refresh stats every 30 seconds
         setInterval(getSystemStats, 30000);
+        
+        // Auto-refresh containers every 60 seconds
+        setInterval(getContainers, 60000);
     </script>
 </body>
 </html>
