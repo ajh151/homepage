@@ -731,16 +731,27 @@
         async function getContainers() {
             try {
                 console.log('Fetching containers...');
+                
+                // Show loading state
+                const grid = document.getElementById('containerGrid');
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Loading containers...</div>';
+                
                 const response = await fetch('/api/docker.php');
+                console.log('Docker API response status:', response.status);
+                
                 if (response.ok) {
                     const containers = await response.json();
                     console.log('Containers received:', containers);
                     updateContainerDisplay(containers);
                 } else {
-                    console.log('Docker API not available');
+                    console.log('Docker API not available, status:', response.status);
+                    const grid = document.getElementById('containerGrid');
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Docker API not available</div>';
                 }
             } catch (error) {
-                console.log('Error fetching containers:', error);
+                console.error('Error fetching containers:', error);
+                const grid = document.getElementById('containerGrid');
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Error loading containers</div>';
             }
         }
 
@@ -825,7 +836,11 @@
         initTheme();
         loadApps();
         getSystemStats();
-        getContainers();
+        
+        // Load containers with a small delay to ensure API is ready
+        setTimeout(() => {
+            getContainers();
+        }, 1000);
         
         // Auto-refresh stats and containers
         setInterval(getSystemStats, 30000);
