@@ -678,6 +678,9 @@
                 <button class="theme-toggle" onclick="toggleTheme()">
                     <span id="theme-icon">☀️</span>
                 </button>
+                <button class="theme-toggle" onclick="console.log('Current settings:', settings); console.log('localStorage:', localStorage.getItem('homepage-settings'));" style="font-size: 10px;">
+                    <span>🐛</span>
+                </button>
             </div>
         </div>
 
@@ -1019,15 +1022,21 @@
 
         // Settings management functions (moved here to be available globally)
         function loadSettings() {
+            console.log('Loading settings...');
             const saved = localStorage.getItem('homepage-settings');
+            console.log('Raw localStorage data:', saved);
+            
             if (saved) {
                 try {
                     const savedSettings = JSON.parse(saved);
+                    console.log('Parsed saved settings:', savedSettings);
                     settings = { ...settings, ...savedSettings };
-                    console.log('Loaded settings:', settings);
+                    console.log('Merged settings:', settings);
                 } catch (e) {
                     console.error('Error loading settings:', e);
                 }
+            } else {
+                console.log('No saved settings found, using defaults');
             }
             applySettings();
         }
@@ -1127,9 +1136,13 @@
         }
 
         function closeSettings() {
+            console.log('Closing settings modal...');
             const modal = document.getElementById('settingsModal');
             if (modal) {
                 modal.style.display = 'none';
+                console.log('Settings modal closed');
+            } else {
+                console.error('Settings modal not found when trying to close');
             }
         }
 
@@ -1632,41 +1645,57 @@
         });
 
         // Settings form submission
-        document.getElementById('settingsForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            console.log('Settings form submitted');
-            
-            // Get values from form and update settings
-            const titleValue = document.getElementById('settingsTitle').value.trim();
-            const searchValue = document.getElementById('settingsSearchEngine').value;
-            const statsValue = parseInt(document.getElementById('settingsStatsInterval').value);
-            const dockerValue = parseInt(document.getElementById('settingsDockerInterval').value);
-            const themeValue = document.getElementById('settingsDefaultTheme').value;
-            const showStatsValue = document.getElementById('showSystemStats').checked;
-            const showDockerValue = document.getElementById('showDockerContainers').checked;
-            
-            // Update settings object
-            settings.title = titleValue || 'Home';
-            settings.searchEngine = searchValue;
-            settings.statsInterval = statsValue || 30;
-            settings.dockerInterval = dockerValue || 60;
-            settings.defaultTheme = themeValue;
-            settings.showSystemStats = showStatsValue;
-            settings.showDockerContainers = showDockerValue;
-            
-            console.log('Updated settings:', settings);
-            
-            // Save settings
-            saveSettings();
-            
-            // Close modal
-            closeSettings();
-            
-            // Show success message
-            showStatus('success', 'Settings saved successfully!');
-            
-            // Note: Page will reload on next visit to apply new intervals
-        });
+        const settingsForm = document.getElementById('settingsForm');
+        if (settingsForm) {
+            settingsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Settings form submitted');
+                
+                // Get values from form and update settings
+                const titleValue = document.getElementById('settingsTitle').value.trim();
+                const searchValue = document.getElementById('settingsSearchEngine').value;
+                const statsValue = parseInt(document.getElementById('settingsStatsInterval').value);
+                const dockerValue = parseInt(document.getElementById('settingsDockerInterval').value);
+                const themeValue = document.getElementById('settingsDefaultTheme').value;
+                const showStatsValue = document.getElementById('showSystemStats').checked;
+                const showDockerValue = document.getElementById('showDockerContainers').checked;
+                
+                console.log('Form values:', {
+                    title: titleValue,
+                    search: searchValue,
+                    stats: statsValue,
+                    docker: dockerValue,
+                    theme: themeValue,
+                    showStats: showStatsValue,
+                    showDocker: showDockerValue
+                });
+                
+                // Update settings object
+                settings.title = titleValue || 'Home';
+                settings.searchEngine = searchValue;
+                settings.statsInterval = statsValue || 30;
+                settings.dockerInterval = dockerValue || 60;
+                settings.defaultTheme = themeValue;
+                settings.showSystemStats = showStatsValue;
+                settings.showDockerContainers = showDockerValue;
+                
+                console.log('Updated settings object:', settings);
+                
+                // Save settings
+                saveSettings();
+                
+                // Close modal
+                closeSettings();
+                
+                // Show success message
+                showStatus('success', 'Settings saved successfully!');
+                
+                // Note: Page will reload on next visit to apply new intervals
+            });
+            console.log('Settings form event listener added');
+        } else {
+            console.error('Settings form not found!');
+        }
 
         // Docker form submissions
         document.getElementById('dockerSimpleForm').addEventListener('submit', function(e) {
