@@ -437,6 +437,87 @@
             pointer-events: none;
         }
 
+        .status-bar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            max-width: 400px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .status-bar.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .status-bar.success {
+            background: #10b981;
+        }
+
+        .status-bar.error {
+            background: #ef4444;
+        }
+
+        .status-bar.info {
+            background: var(--accent-color);
+        }
+
+        .status-bar.warning {
+            background: #f59e0b;
+        }
+
+        .status-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .status-message {
+            flex: 1;
+        }
+
+        .status-details {
+            margin-top: 8px;
+            font-size: 12px;
+            opacity: 0.9;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 4px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .status-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+        }
+
+        .status-close:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -736,6 +817,16 @@
         </div>
     </div>
 
+    <!-- Status Bar -->
+    <div class="status-bar" id="statusBar">
+        <div class="status-content">
+            <div class="status-icon" id="statusIcon"></div>
+            <div class="status-message" id="statusMessage"></div>
+            <button class="status-close" onclick="hideStatus()">&times;</button>
+        </div>
+        <div class="status-details" id="statusDetails" style="display: none;"></div>
+    </div>
+
     <script>
         // Apps data
         let apps = [
@@ -743,6 +834,53 @@
             { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
             { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
         ];
+
+        // Status bar functions
+        function showStatus(type, message, details = null) {
+            const statusBar = document.getElementById('statusBar');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusMessage = document.getElementById('statusMessage');
+            const statusDetails = document.getElementById('statusDetails');
+            
+            // Set icon based on type
+            const icons = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️',
+                warning: '⚠️'
+            };
+            
+            statusIcon.textContent = icons[type] || 'ℹ️';
+            statusMessage.textContent = message;
+            
+            // Show details if provided
+            if (details) {
+                statusDetails.textContent = details;
+                statusDetails.style.display = 'block';
+            } else {
+                statusDetails.style.display = 'none';
+            }
+            
+            // Set type class
+            statusBar.className = `status-bar ${type}`;
+            
+            // Show the status bar
+            setTimeout(() => {
+                statusBar.classList.add('show');
+            }, 100);
+            
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    hideStatus();
+                }, 3000);
+            }
+        }
+
+        function hideStatus() {
+            const statusBar = document.getElementById('statusBar');
+            statusBar.classList.remove('show');
+        }
 
         // Theme management
         function initTheme() {
@@ -957,6 +1095,8 @@
                 const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
                 containerCard.classList.add('loading');
 
+                showStatus('info', `${action.charAt(0).toUpperCase() + action.slice(1)}ing container...`, `Working on ${containerName}`);
+
                 const response = await fetch('/api/docker.php', {
                     method: 'POST',
                     headers: {
@@ -972,17 +1112,19 @@
                 console.log(`${action} result:`, result);
                 
                 if (result.success) {
+                    showStatus('success', `Container ${action}ed successfully!`, result.output || `${containerName} ${action} completed`);
+                    
                     // Refresh containers after action
                     setTimeout(() => {
                         getContainers();
                     }, 1000);
                 } else {
-                    alert(`Failed to ${action} container: ${result.error || result.output || 'Unknown error'}`);
+                    showStatus('error', `Failed to ${action} container`, result.error || result.output || 'Unknown error');
                     containerCard.classList.remove('loading');
                 }
             } catch (error) {
                 console.error(`Error ${action} container:`, error);
-                alert(`Error: ${error.message}`);
+                showStatus('error', `Error ${action}ing container`, error.message);
                 // Remove loading state on error
                 const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
                 if (containerCard) containerCard.classList.remove('loading');
@@ -1000,6 +1142,8 @@
                 const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
                 containerCard.classList.add('loading');
 
+                showStatus('info', `${purge ? 'Purging' : 'Removing'} container...`, `Working on ${containerName}`);
+
                 const response = await fetch('/api/docker.php', {
                     method: 'POST',
                     headers: {
@@ -1015,17 +1159,19 @@
                 console.log(`${purge ? 'purge' : 'remove'} result:`, result);
                 
                 if (result.success) {
+                    showStatus('success', `Container ${purge ? 'purged' : 'removed'} successfully!`, result.output || `${containerName} has been ${purge ? 'purged' : 'removed'}`);
+                    
                     // Refresh containers after removal
                     setTimeout(() => {
                         getContainers();
                     }, 1000);
                 } else {
-                    alert(`Failed to ${action}: ${result.error || result.output || 'Unknown error'}`);
+                    showStatus('error', `Failed to ${purge ? 'purge' : 'remove'} container`, result.error || result.output || 'Unknown error');
                     containerCard.classList.remove('loading');
                 }
             } catch (error) {
                 console.error(`Error ${purge ? 'purging' : 'removing'} container:`, error);
-                alert(`Error: ${error.message}`);
+                showStatus('error', `Error ${purge ? 'purging' : 'removing'} container`, error.message);
                 // Remove loading state on error
                 const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
                 if (containerCard) containerCard.classList.remove('loading');
@@ -1094,6 +1240,9 @@
             try {
                 console.log('Deploying container with data:', formData);
                 
+                // Show deployment started status
+                showStatus('info', 'Deploying container...', `Starting deployment of ${formData.name || 'container'}`);
+                
                 const response = await fetch('/api/docker.php', {
                     method: 'POST',
                     headers: {
@@ -1107,17 +1256,18 @@
                 
                 if (result.success) {
                     closeDockerModal();
-                    alert('Container deployed successfully!');
+                    showStatus('success', 'Container deployed successfully!', result.output || 'Container is now running');
+                    
                     // Refresh containers after deployment
                     setTimeout(() => {
                         getContainers();
                     }, 2000);
                 } else {
-                    alert(`Deployment failed: ${result.error || result.output || 'Unknown error'}`);
+                    showStatus('error', 'Deployment failed', result.error || result.output || 'Unknown error occurred');
                 }
             } catch (error) {
                 console.error('Deployment error:', error);
-                alert(`Error: ${error.message}`);
+                showStatus('error', 'Deployment error', `Network error: ${error.message}`);
             }
         }
 
