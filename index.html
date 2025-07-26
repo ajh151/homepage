@@ -1,4 +1,1701 @@
-<!DOCTYPE html>
+<script>
+        // Global variables
+        let apps = [];
+        let settings = { 
+            title: 'Home',
+            searchEngine: 'google',
+            searchNewTab: false,
+            debugMode: false,
+            showApps: true,
+            showStats: true,
+            showDocker: true
+        };
+
+        // Search engine configurations
+        const searchEngines = {
+            google: { name: 'Google', url: 'https://www.google.com/search', param: 'q' },
+            duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/', param: 'q' },
+            bing: { name: 'Bing', url: 'https://www.bing.com/search', param: 'q' },
+            startpage: { name: 'Startpage', url: 'https://www.startpage.com/sp/search', param: 'query' },
+            searx: { name: 'SearX', url: 'https://searx.org/search', param: 'q' }
+        };
+
+        // Drag and drop variables
+        let draggedElement = null;
+        let draggedIndex = null;
+
+        // API functions for storage
+        async function loadFromAPI() {
+            try {
+                const response = await fetch('/api/storage.php');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        apps = data.data.apps || [];
+                        settings = { ...settings, ...(data.data.settings || {}) };
+                        console.log('Data loaded from API');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.log('API not available, using fallback data');
+            }
+            
+            // Fallback to default data if API fails
+            apps = [
+                { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
+                { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
+                { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
+            ];
+            return false;
+        }
+
+        async function saveAppsToAPI() {
+            try {
+                const response = await fetch('/api/storage.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'apps',
+                        data: apps
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('Apps saved to API');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving apps to API:', error);
+            }
+            return false;
+        }
+
+        async function saveSettingsToAPI() {
+            try {
+                const response = await fetch('/api/storage.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'settings',
+                        data: settings
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('Settings saved to API');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving settings to API:', error);
+            }
+            return false;
+        }
+
+        // Status bar functions
+        function showStatus(type, message, details = null) {
+            const statusBar = document.getElementById('statusBar');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusMessage = document.getElementById('statusMessage');
+            const statusDetails = document.getElementById('statusDetails');
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️',
+                warning: '⚠️'
+            };
+            
+            statusIcon.textContent = icons[type] || 'ℹ️';
+            statusMessage.textContent = message;
+            
+            // Show details if debug mode is enabled or if it's an error
+            if ((details && settings.debugMode) || (details && type === 'error')) {
+                statusDetails.textContent = details;
+                statusDetails.style.display = 'block';
+            } else {
+                statusDetails.style.display = 'none';
+            }
+            
+            statusBar.className = `status-bar ${type}`;
+            
+            setTimeout(() => {
+                statusBar.classList.add('show');
+            }, 100);
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    hideStatus();
+                }, 3000);
+            }
+        }
+
+        function hideStatus() {
+            const statusBar = document.getElementById('statusBar');
+            statusBar.classList.remove('show');
+        }
+
+        // Theme management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('homepage-theme') || 'dark';
+            const themeIcon = document.getElementById('theme-icon');
+            
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '🌙';
+            } else {
+                themeIcon.textContent = '☀️';
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('theme-icon');
+            const currentTheme = html.getAttribute('data-theme');
+            
+            if (currentTheme === 'light') {
+                html.removeAttribute('data-theme');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('homepage-theme', 'dark');
+            } else {
+                html.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('homepage-theme', 'light');
+            }
+        }
+
+        // Update search form based on settings
+        function updateSearchForm() {
+            const searchForm = document.querySelector('.search-form');
+            const engine = searchEngines[settings.searchEngine] || searchEngines.google;
+            
+            searchForm.action = engine.url;
+            searchForm.target = settings.searchNewTab ? '_blank' : '_self';
+            
+            // Update the search input name attribute
+            const searchInput = searchForm.querySelector('.search-input');
+            searchInput.name = engine.param;
+        }
+
+        // Section visibility management
+        function updateSectionVisibility() {
+            const sections = [
+                { setting: 'showApps', selector: '.apps-section:first-of-type' },
+                { setting: 'showStats', selector: '.apps-section:nth-of-type(2)' },
+                { setting: 'showDocker', selector: '.apps-section:nth-of-type(3)' }
+            ];
+            
+            sections.forEach(section => {
+                const element = document.querySelector(section.selector);
+                if (element) {
+                    element.style.display = settings[section.setting] ? 'block' : 'none';
+                }
+            });
+        }
+
+        // Export/Import functions
+        function exportSettings() {
+            const exportData = {
+                apps: apps,
+                settings: settings,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `homepage-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showStatus('success', 'Settings exported successfully!');
+        }
+
+        async function importSettings(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                const text = await file.text();
+                const importData = JSON.parse(text);
+                
+                if (!importData.apps || !importData.settings) {
+                    throw new Error('Invalid backup file format');
+                }
+                
+                // Confirm import
+                if (!confirm('This will replace all current apps and settings. Continue?')) {
+                    return;
+                }
+                
+                // Import data
+                apps = importData.apps;
+                settings = { ...settings, ...importData.settings };
+                
+                // Save to API
+                await saveAppsToAPI();
+                await saveSettingsToAPI();
+                
+                // Update UI
+                renderApps();
+                updateSearchForm();
+                updateSectionVisibility();
+                loadSettingsIntoForm();
+                
+                // Update page title
+                document.querySelector('.logo').textContent = settings.title;
+                document.title = settings.title;
+                
+                showStatus('success', 'Settings imported successfully!', `Imported ${apps.length} apps and settings`);
+                
+            } catch (error) {
+                showStatus('error', 'Failed to import settings', settings.debugMode ? error.message : 'Invalid file format');
+            }
+            
+            // Clear the file input
+            event.target.value = '';
+        }
+
+        async function resetSettings() {
+            if (!confirm('Reset all settings and apps to defaults? This cannot be undone.')) {
+                return;
+            }
+            
+            // Reset to defaults
+            apps = [
+                { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
+                { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
+                { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
+            ];
+            settings = {
+                title: 'Home',
+                searchEngine: 'google',
+                searchNewTab: false,
+                debugMode: false,
+                showApps: true,
+                showStats: true,
+                showDocker: true
+            };
+            
+            // Save to API
+            await saveAppsToAPI();
+            await saveSettingsToAPI();
+            
+            // Update UI
+            renderApps();
+            updateSearchForm();
+            updateSectionVisibility();
+            loadSettingsIntoForm();
+            
+            // Update page title
+            document.querySelector('.logo').textContent = settings.title;
+            document.title = settings.title;
+            
+            showStatus('success', 'Settings reset to defaults!');
+        }
+
+        // Apps management
+        async function loadApps() {
+            await loadFromAPI();
+            renderApps();
+        }
+
+        async function saveApps() {
+            await saveAppsToAPI();
+        }
+
+        // Drag and drop functionality
+        function handleDragStart(e) {
+            draggedElement = this;
+            draggedIndex = parseInt(this.dataset.index);
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnter(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            this.classList.add('drag-over');
+            return false;
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+
+            this.classList.remove('drag-over');
+
+            if (draggedElement !== this) {
+                const dropIndex = parseInt(this.dataset.index);
+                
+                // Reorder the apps array
+                const draggedApp = apps[draggedIndex];
+                apps.splice(draggedIndex, 1);
+                apps.splice(dropIndex, 0, draggedApp);
+                
+                saveApps();
+                renderApps();
+            }
+
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            // Clean up all drag states
+            document.querySelectorAll('.app-item').forEach(item => {
+                item.classList.remove('dragging', 'drag-over');
+            });
+            draggedElement = null;
+            draggedIndex = null;
+        }
+
+        function renderApps() {
+            const grid = document.getElementById('appsGrid');
+            grid.innerHTML = '';
+
+            apps.forEach((app, index) => {
+                const appElement = document.createElement('a');
+                appElement.className = 'app-item';
+                appElement.href = app.url;
+                appElement.target = '_blank';
+                appElement.draggable = true;
+                appElement.dataset.index = index;
+                
+                appElement.innerHTML = `
+                    <div class="app-icon">${app.icon || app.name.charAt(0).toUpperCase()}</div>
+                    <div class="app-name">${app.name}</div>
+                    <button class="delete-btn" onclick="deleteApp(event, ${index})" title="Delete">×</button>
+                `;
+                
+                // Add drag event listeners
+                appElement.addEventListener('dragstart', handleDragStart);
+                appElement.addEventListener('dragover', handleDragOver);
+                appElement.addEventListener('dragenter', handleDragEnter);
+                appElement.addEventListener('dragleave', handleDragLeave);
+                appElement.addEventListener('drop', handleDrop);
+                appElement.addEventListener('dragend', handleDragEnd);
+                
+                grid.appendChild(appElement);
+            });
+        }
+
+        function openModal() {
+            document.getElementById('addModal').style.display = 'block';
+            document.getElementById('appName').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('addModal').style.display = 'none';
+            document.getElementById('addAppForm').reset();
+            const picker = document.getElementById('emojiPicker');
+            if (picker) picker.classList.remove('show');
+        }
+
+        // Emoji picker functions
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            if (picker) {
+                picker.classList.toggle('show');
+            }
+        }
+
+        function selectEmoji(emoji) {
+            const input = document.getElementById('appIcon');
+            const picker = document.getElementById('emojiPicker');
+            
+            if (input) {
+                input.value = emoji;
+            }
+            if (picker) {
+                picker.classList.remove('show');
+            }
+        }
+
+        function deleteApp(event, index) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            if (confirm('Delete this app?')) {
+                apps.splice(index, 1);
+                saveApps();
+                renderApps();
+            }
+        }
+
+        // System monitoring
+        async function getSystemStats() {
+            try {
+                const response = await fetch('/api/stats.php');
+                if (response.ok) {
+                    const stats = await response.json();
+                    updateStatsDisplay(stats);
+                }
+            } catch (error) {
+                console.log('Stats API not available');
+            }
+        }
+
+        function updateStatsDisplay(stats) {
+            document.getElementById('cpuTemp').textContent = `${stats.cpuTemp}°C`;
+            document.getElementById('fail2banCount').textContent = `${stats.fail2banCount} today`;
+            document.getElementById('cpuUsage').textContent = `${stats.cpuUsage}%`;
+            document.getElementById('memUsage').textContent = `${stats.memUsage}%`;
+            document.getElementById('diskUsage').textContent = `${stats.diskUsage}%`;
+            document.getElementById('uptime').textContent = `${stats.uptime} days`;
+        }
+
+        function refreshStats() {
+            getSystemStats();
+        }
+
+        // Docker container management
+        async function getContainers() {
+            try {
+                const response = await fetch('/api/docker.php');
+                if (response.ok) {
+                    const containers = await response.json();
+                    updateContainerDisplay(containers);
+                } else {
+                    document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Docker API not available</div>';
+                }
+            } catch (error) {
+                document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Error loading containers</div>';
+            }
+        }
+
+        function updateContainerDisplay(containers) {
+            const grid = document.getElementById('containerGrid');
+            
+            if (!containers || containers.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">No containers found</div>';
+                return;
+            }
+
+            grid.innerHTML = containers.map(container => `
+                <div class="container-card">
+                    <div class="container-header">
+                        <div class="container-info">
+                            <div class="container-name">${container.name}</div>
+                            <div class="container-image">${container.image}</div>
+                        </div>
+                        <div class="container-status">
+                            <div class="status-dot ${container.status}"></div>
+                            <div class="container-status-text">${container.status}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="container-details">
+                        <div class="container-detail">
+                            <div class="detail-label">Ports</div>
+                            <div class="detail-value">${container.ports || 'None'}</div>
+                        </div>
+                        <div class="container-detail">
+                            <div class="detail-label">Uptime</div>
+                            <div class="detail-value">${container.uptime || '0s'}</div>
+                        </div>
+                        <div class="container-detail">
+                            <div class="detail-label">CPU</div>
+                            <div class="detail-value">${container.cpu || '0%'}</div>
+                        </div>
+                        <div class="container-detail">
+                            <div class="detail-label">Memory</div>
+                            <div class="detail-value">${container.memory || '0MB'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="container-actions">
+                        ${container.status === 'running' ? `
+                            <button class="action-btn stop" onclick="containerAction('${container.name}', 'stop')">Stop</button>
+                            <button class="action-btn restart" onclick="containerAction('${container.name}', 'restart')">Restart</button>
+                        ` : `
+                            <button class="action-btn start" onclick="containerAction('${container.name}', 'start')">Start</button>
+                        `}
+                        <button class="action-btn" onclick="containerLogs('${container.name}')">Logs</button>
+                        <button class="action-btn stop" onclick="removeContainer('${container.name}', false)">Remove</button>
+                        <button class="action-btn purge" onclick="removeContainer('${container.name}', true)">Purge</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Container action functions
+        async function containerAction(containerName, action) {
+            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} container "${containerName}"?`)) {
+                return;
+            }
+
+            try {
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                containerCard.classList.add('loading');
+
+                showStatus('info', `${action.charAt(0).toUpperCase() + action.slice(1)}ing container...`, `Working on ${containerName}`);
+
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        container: containerName,
+                        action: action
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('success', `Container ${action}ed successfully!`, result.output || `${containerName} ${action} completed`);
+                    setTimeout(() => {
+                        getContainers();
+                    }, 1000);
+                } else {
+                    showStatus('error', `Failed to ${action} container`, result.error || result.output || 'Unknown error');
+                    containerCard.classList.remove('loading');
+                }
+            } catch (error) {
+                showStatus('error', `Error ${action}ing container`, error.message);
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                if (containerCard) containerCard.classList.remove('loading');
+            }
+        }
+
+        async function removeContainer(containerName, purge = false) {
+            const action = purge ? 'purge (remove container + volumes + images)' : 'remove container';
+            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} "${containerName}"?`)) {
+                return;
+            }
+
+            try {
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                containerCard.classList.add('loading');
+
+                showStatus('info', `${purge ? 'Purging' : 'Removing'} container...`, `Working on ${containerName}`);
+
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        container: containerName,
+                        action: purge ? 'purge' : 'remove'
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('success', `Container ${purge ? 'purged' : 'removed'} successfully!`, result.output || `${containerName} has been ${purge ? 'purged' : 'removed'}`);
+                    setTimeout(() => {
+                        getContainers();
+                    }, 1000);
+                } else {
+                    showStatus('error', `Failed to ${purge ? 'purge' : 'remove'} container`, result.error || result.output || 'Unknown error');
+                    containerCard.classList.remove('loading');
+                }
+            } catch (error) {
+                showStatus('error', `Error ${purge ? 'purging' : 'removing'} container`, error.message);
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                if (containerCard) containerCard.classList.remove('loading');
+            }
+        }
+
+        function containerLogs(containerName) {
+            window.open(`/api/docker.php?logs=${containerName}`, '_blank');
+        }
+
+        function refreshContainers() {
+            getContainers();
+        }
+
+        // Settings functions
+        function loadSettingsIntoForm() {
+            document.getElementById('settingsTitle').value = settings.title || 'Home';
+            document.getElementById('settingsSearchEngine').value = settings.searchEngine || 'google';
+            document.getElementById('settingsSearchNewTab').checked = settings.searchNewTab || false;
+            document.getElementById('settingsDebugMode').checked = settings.debugMode || false;
+            document.getElementById('settingsShowApps').checked = settings.showApps !== false;
+            document.getElementById('settingsShowStats').checked = settings.showStats !== false;
+            document.getElementById('settingsShowDocker').checked = settings.showDocker !== false;
+        }
+
+        function openSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                loadSettingsIntoForm();
+                modal.style.display = 'block';
+            }
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        async function saveSettings() {
+            // Get all form values
+            const newTitle = document.getElementById('settingsTitle').value.trim() || 'Home';
+            const newSearchEngine = document.getElementById('settingsSearchEngine').value;
+            const newSearchNewTab = document.getElementById('settingsSearchNewTab').checked;
+            const newDebugMode = document.getElementById('settingsDebugMode').checked;
+            const newShowApps = document.getElementById('settingsShowApps').checked;
+            const newShowStats = document.getElementById('settingsShowStats').checked;
+            const newShowDocker = document.getElementById('settingsShowDocker').checked;
+            
+            // Update settings object
+            settings = {
+                ...settings,
+                title: newTitle,
+                searchEngine: newSearchEngine,
+                searchNewTab: newSearchNewTab,
+                debugMode: newDebugMode,
+                showApps: newShowApps,
+                showStats: newShowStats,
+                showDocker: newShowDocker
+            };
+            
+            // Update the page display
+            document.querySelector('.logo').textContent = newTitle;
+            document.title = newTitle;
+            
+            // Update search form and section visibility
+            updateSearchForm();
+            updateSectionVisibility();
+            
+            // Save to API
+            const saved = await saveSettingsToAPI();
+            
+            // Close modal and show status
+            closeSettings();
+            
+            if (saved) {
+                showStatus('success', 'Settings saved!', settings.debugMode ? 'All settings saved to server' : null);
+            } else {
+                showStatus('warning', 'Settings saved locally (API unavailable)', settings.debugMode ? 'Could not reach server API' : null);
+            }
+        }
+
+        async function loadSavedSettings() {
+            await loadFromAPI();
+            
+            // Apply loaded settings
+            const savedTitle = settings.title || 'Home';
+            document.querySelector('.logo').textContent = savedTitle;
+            document.title = savedTitle;
+            
+            // Update search form and section visibility
+            updateSearchForm();
+            updateSectionVisibility();
+            
+            // Update settings form
+            loadSettingsIntoForm();
+        }
+
+        // Docker modal functions
+        function openDockerModal() {
+            document.getElementById('dockerModal').style.display = 'block';
+            showDockerMethod('simple');
+        }
+
+        function closeDockerModal() {
+            const modal = document.getElementById('dockerModal');
+            if (modal) {
+                modal.style.display = 'none';
+                const simpleForm = document.getElementById('dockerSimpleForm');
+                const composeForm = document.getElementById('dockerComposeForm');
+                if (simpleForm) simpleForm.reset();
+                if (composeForm) composeForm.reset();
+            }
+        }
+
+        function showDockerMethod(method) {
+            const simpleForm = document.getElementById('dockerSimpleForm');
+            const composeForm = document.getElementById('dockerComposeForm');
+            const simpleBtn = document.getElementById('simpleBtn');
+            const composeBtn = document.getElementById('composeBtn');
+
+            if (method === 'simple') {
+                if (simpleForm) simpleForm.style.display = 'block';
+                if (composeForm) composeForm.style.display = 'none';
+                if (simpleBtn) {
+                    simpleBtn.style.background = 'var(--accent-color)';
+                    simpleBtn.style.color = 'white';
+                }
+                if (composeBtn) {
+                    composeBtn.style.background = 'none';
+                    composeBtn.style.color = 'var(--text-primary)';
+                }
+            } else {
+                if (simpleForm) simpleForm.style.display = 'none';
+                if (composeForm) composeForm.style.display = 'block';
+                if (composeBtn) {
+                    composeBtn.style.background = 'var(--accent-color)';
+                    composeBtn.style.color = 'white';
+                }
+                if (simpleBtn) {
+                    simpleBtn.style.background = 'none';
+                    simpleBtn.style.color = 'var(--text-primary)';
+                }
+            }
+        }
+
+        async function deployContainer(formData) {
+            try {
+                closeDockerModal();
+                showStatus('info', 'Deploying container...', `Starting deployment of ${formData.name || 'container'}`);
+                
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('success', 'Container deployed successfully!', result.output || 'Container is now running');
+                    setTimeout(() => {
+                        getContainers();
+                    }, 2000);
+                } else {
+                    showStatus('error', 'Deployment failed', result.error || result.output || 'Unknown error occurred');
+                }
+            } catch (error) {
+                showStatus('error', 'Deployment error', `Network error: ${error.message}`);
+            }
+        }
+
+        // Initialize everything when the page loads
+        function initializePage() {
+            console.log('Initializing page...');
+            
+            // Initialize theme
+            initTheme();
+            
+            // Load data
+            loadApps();
+            loadSavedSettings();
+            
+            // Load containers and stats
+            setTimeout(() => {
+                getSystemStats();
+                getContainers();
+            }, 1000);
+            
+            // Auto-refresh
+            setInterval(getSystemStats, 30000);
+            setInterval(getContainers, 60000);
+
+            // App form submission
+            document.getElementById('addAppForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('appName').value.trim();
+                const url = document.getElementById('appUrl').value.trim();
+                const icon = document.getElementById('appIcon').value.trim();
+                
+                if (name && url) {
+                    apps.push({ name, url, icon });
+                    await saveApps();
+                    renderApps();
+                    closeModal();
+                }
+            });
+
+            // Docker form submissions
+            document.getElementById('dockerSimpleForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    action: 'deploy',
+                    method: 'simple',
+                    name: document.getElementById('dockerName').value.trim(),
+                    image: document.getElementById('dockerImage').value.trim(),
+                    ports: document.getElementById('dockerPorts').value.trim(),
+                    env: document.getElementById('dockerEnv').value.trim(),
+                    volumes: document.getElementById('dockerVolumes').value.trim()
+                };
+                
+                deployContainer(formData);
+            });
+
+            document.getElementById('dockerComposeForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    action: 'deploy',
+                    method: 'compose',
+                    compose: document.getElementById('dockerCompose').value.trim()
+                };
+                
+                deployContainer(formData);
+            });
+
+            // Modal close on outside click
+            document.getElementById('addModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+
+            document.getElementById('dockerModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeDockerModal();
+                }
+            });
+
+            document.getElementById('settingsModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeSettings();
+                }
+            });
+
+            // Close emoji picker when clicking outside
+            document.addEventListener('click', function(e) {
+                const picker = document.getElementById('emojiPicker');
+                const emojiBtn = document.querySelector('.emoji-btn');
+                
+                if (picker && !picker.contains(e.target) && e.target !== emojiBtn) {
+                    picker.classList.remove('show');
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    closeDockerModal();
+                    closeSettings();
+                }
+            });
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>    <!-- Add Docker Container Modal -->
+    <div class="modal" id="dockerModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3 class="modal-title">Add Docker Container</h3>
+            
+            <!-- Method Selection -->
+            <div style="margin-bottom: 20px; display: flex; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="showDockerMethod('simple')" id="simpleBtn">Simple Run</button>
+                <button type="button" class="btn btn-secondary" onclick="showDockerMethod('compose')" id="composeBtn">Docker Compose</button>
+            </div>
+            
+            <!-- Simple Docker Run Form -->
+            <form id="dockerSimpleForm" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Container Name</label>
+                    <input type="text" class="form-input" id="dockerName" placeholder="my-container" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Docker Image</label>
+                    <input type="text" class="form-input" id="dockerImage" placeholder="nginx:latest" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ports (optional)</label>
+                    <input type="text" class="form-input" id="dockerPorts" placeholder="8080:80">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Format: host:container (e.g., 8080:80)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Environment Variables (optional)</label>
+                    <textarea class="form-input" id="dockerEnv" placeholder="VAR1=value1&#10;VAR2=value2" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Volumes (optional)</label>
+                    <input type="text" class="form-input" id="dockerVolumes" placeholder="/host/path:/container/path">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeDockerModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Deploy Container</button>
+                </div>
+            </form>
+            
+            <!-- Docker Compose Form -->
+            <form id="dockerComposeForm" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Docker Compose YAML</label>
+                    <textarea class="form-input" id="dockerCompose" placeholder="version: '3.8'&#10;services:&#10;  web:&#10;    image: nginx:latest&#10;    ports:&#10;      - '8080:80'" rows="12" required></textarea>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Paste your complete docker-compose.yml content here
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeDockerModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Deploy Compose</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+            <h3 class="modal-title">Settings</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                Customize your homepage settings
+            </p>
+            
+            <!-- General Settings -->
+            <div style="margin-bottom: 30px;">
+                <h4 style="color: var(--text-primary); font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">General</h4>
+                
+                <div class="form-group">
+                    <label class="form-label">Page Title</label>
+                    <input type="text" class="form-input" id="settingsTitle" placeholder="Home" value="Home">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Search Engine</label>
+                    <select class="form-input" id="settingsSearchEngine">
+                        <option value="google">Google</option>
+                        <option value="duckduckgo">DuckDuckGo</option>
+                        <option value="bing">Bing</option>
+                        <option value="startpage">Startpage</option>
+                        <option value="searx">SearX</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="settingsSearchNewTab" style="margin-right: 8px;">
+                        Open search in new tab
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="settingsDebugMode" style="margin-right: 8px;">
+                        Debug mode (show detailed error messages)
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Section Visibility -->
+            <div style="margin-bottom: 30px;">
+                <h4 style="color: var(--text-primary); font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Show/Hide Sections</h4>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="settingsShowApps" style="margin-right: 8px;" checked>
+                        Show Apps section
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="settingsShowStats" style="margin-right: 8px;" checked>
+                        Show System Status section
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="settingsShowDocker" style="margin-right: 8px;" checked>
+                        Show Docker Containers section
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Data Management -->
+            <div style="margin-bottom: 30px;">
+                <h4 style="color: var(--text-primary); font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Data Management</h4>
+                
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" onclick="exportSettings()" style="flex: 1; min-width: 120px;">
+                        📤 Export Settings
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="flex: 1; min-width: 120px;">
+                        📥 Import Settings
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetSettings()" style="flex: 1; min-width: 120px; color: #ef4444; border-color: #ef4444;">
+                        🔄 Reset to Defaults
+                    </button>
+                </div>
+                
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importSettings(event)">
+                
+                <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+                    Export creates a backup file with all your apps and settings. Import restores from a backup file.
+                </div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button type="button" class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar" id="statusBar">
+        <div class="status-content">
+            <div class="status-icon" id="statusIcon"></div>
+            <div class="status-message" id="statusMessage"></div>
+            <button class="status-close" onclick="hideStatus()">&times;</button>
+        </div>
+        <div class="status-details" id="statusDetails" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Global variables
+        let apps = [];
+        let settings = { 
+            title: 'Home',
+            searchEngine: 'google',
+            searchNewTab: false,
+            debugMode: false,
+            showApps: true,
+            showStats: true,
+            showDocker: true
+        };
+
+        // Search engine configurations
+        const searchEngines = {
+            google: { name: 'Google', url: 'https://www.google.com/search', param: 'q' },
+            duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/', param: 'q' },
+            bing: { name: 'Bing', url: 'https://www.bing.com/search', param: 'q' },
+            startpage: { name: 'Startpage', url: 'https://www.startpage.com/sp/search', param: 'query' },
+            searx: { name: 'SearX', url: 'https://searx.org/search', param: 'q' }
+        };
+
+        // API functions for storage
+        async function loadFromAPI() {
+            try {
+                const response = await fetch('/api/storage.php');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        apps = data.data.apps || [];
+                        settings = { ...settings, ...(data.data.settings || {}) };
+                        console.log('Data loaded from API');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.log('API not available, using fallback data');
+            }
+            
+            // Fallback to default data if API fails
+            apps = [
+                { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
+                { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
+                { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
+            ];
+            return false;
+        }
+
+        async function saveAppsToAPI() {
+            try {
+                const response = await fetch('/api/storage.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'apps',
+                        data: apps
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('Apps saved to API');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving apps to API:', error);
+            }
+            return false;
+        }
+
+        async function saveSettingsToAPI() {
+            try {
+                const response = await fetch('/api/storage.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'settings',
+                        data: settings
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('Settings saved to API');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving settings to API:', error);
+            }
+            return false;
+        }
+
+        // Status bar functions
+        function showStatus(type, message, details = null) {
+            const statusBar = document.getElementById('statusBar');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusMessage = document.getElementById('statusMessage');
+            const statusDetails = document.getElementById('statusDetails');
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️',
+                warning: '⚠️'
+            };
+            
+            statusIcon.textContent = icons[type] || 'ℹ️';
+            statusMessage.textContent = message;
+            
+            // Show details if debug mode is enabled or if it's an error
+            if ((details && settings.debugMode) || (details && type === 'error')) {
+                statusDetails.textContent = details;
+                statusDetails.style.display = 'block';
+            } else {
+                statusDetails.style.display = 'none';
+            }
+            
+            statusBar.className = `status-bar ${type}`;
+            
+            setTimeout(() => {
+                statusBar.classList.add('show');
+            }, 100);
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    hideStatus();
+                }, 3000);
+            }
+        }
+
+        function hideStatus() {
+            const statusBar = document.getElementById('statusBar');
+            statusBar.classList.remove('show');
+        }
+
+        // Theme management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('homepage-theme') || 'dark';
+            const themeIcon = document.getElementById('theme-icon');
+            
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '🌙';
+            } else {
+                themeIcon.textContent = '☀️';
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('theme-icon');
+            const currentTheme = html.getAttribute('data-theme');
+            
+            if (currentTheme === 'light') {
+                html.removeAttribute('data-theme');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('homepage-theme', 'dark');
+            } else {
+                html.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('homepage-theme', 'light');
+            }
+        }
+
+        // Update search form based on settings
+        function updateSearchForm() {
+            const searchForm = document.querySelector('.search-form');
+            const engine = searchEngines[settings.searchEngine] || searchEngines.google;
+            
+            searchForm.action = engine.url;
+            searchForm.target = settings.searchNewTab ? '_blank' : '_self';
+            
+            // Update the search input name attribute
+            const searchInput = searchForm.querySelector('.search-input');
+            searchInput.name = engine.param;
+        }
+
+        // Section visibility management
+        function updateSectionVisibility() {
+            const sections = [
+                { setting: 'showApps', selector: '.apps-section:first-of-type' },
+                { setting: 'showStats', selector: '.apps-section:nth-of-type(2)' },
+                { setting: 'showDocker', selector: '.apps-section:nth-of-type(3)' }
+            ];
+            
+            sections.forEach(section => {
+                const element = document.querySelector(section.selector);
+                if (element) {
+                    element.style.display = settings[section.setting] ? 'block' : 'none';
+                }
+            });
+        }
+
+        // Export/Import functions
+        function exportSettings() {
+            const exportData = {
+                apps: apps,
+                settings: settings,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `homepage-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showStatus('success', 'Settings exported successfully!');
+        }
+
+        async function importSettings(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                const text = await file.text();
+                const importData = JSON.parse(text);
+                
+                if (!importData.apps || !importData.settings) {
+                    throw new Error('Invalid backup file format');
+                }
+                
+                // Confirm import
+                if (!confirm('This will replace all current apps and settings. Continue?')) {
+                    return;
+                }
+                
+                // Import data
+                apps = importData.apps;
+                settings = { ...settings, ...importData.settings };
+                
+                // Save to API
+                await saveAppsToAPI();
+                await saveSettingsToAPI();
+                
+                // Update UI
+                renderApps();
+                updateSearchForm();
+                updateSectionVisibility();
+                loadSettingsIntoForm();
+                
+                // Update page title
+                document.querySelector('.logo').textContent = settings.title;
+                document.title = settings.title;
+                
+                showStatus('success', 'Settings imported successfully!', `Imported ${apps.length} apps and settings`);
+                
+            } catch (error) {
+                showStatus('error', 'Failed to import settings', settings.debugMode ? error.message : 'Invalid file format');
+            }
+            
+            // Clear the file input
+            event.target.value = '';
+        }
+
+        async function resetSettings() {
+            if (!confirm('Reset all settings and apps to defaults? This cannot be undone.')) {
+                return;
+            }
+            
+            // Reset to defaults
+            apps = [
+                { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
+                { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
+                { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
+            ];
+            settings = {
+                title: 'Home',
+                searchEngine: 'google',
+                searchNewTab: false,
+                debugMode: false,
+                showApps: true,
+                showStats: true,
+                showDocker: true
+            };
+            
+            // Save to API
+            await saveAppsToAPI();
+            await saveSettingsToAPI();
+            
+            // Update UI
+            renderApps();
+            updateSearchForm();
+            updateSectionVisibility();
+            loadSettingsIntoForm();
+            
+            // Update page title
+            document.querySelector('.logo').textContent = settings.title;
+            document.title = settings.title;
+            
+            showStatus('success', 'Settings reset to defaults!');
+        }
+
+        // Apps management
+        async function loadApps() {
+            await loadFromAPI();
+            renderApps();
+        }
+
+        async function saveApps() {
+            await saveAppsToAPI();
+        }
+
+        // Drag and drop functionality
+        let draggedElement = null;
+        let draggedIndex = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            draggedIndex = parseInt(this.dataset.index);
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnter(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            this.classList.add('drag-over');
+            return false;
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+
+            this.classList.remove('drag-over');
+
+            if (draggedElement !== this) {
+                const dropIndex = parseInt(this.dataset.index);
+                
+                // Reorder the apps array
+                const draggedApp = apps[draggedIndex];
+                apps.splice(draggedIndex, 1);
+                apps.splice(dropIndex, 0, draggedApp);
+                
+                saveApps();
+                renderApps();
+            }
+
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            // Clean up all drag states
+            document.querySelectorAll('.app-item').forEach(item => {
+                item.classList.remove('dragging', 'drag-over');
+            });
+            draggedElement = null;
+            draggedIndex = null;
+        }
+
+        function renderApps() {
+            const grid = document.getElementById('appsGrid');
+            grid.innerHTML = '';
+
+            apps.forEach((app, index) => {
+                const appElement = document.createElement('a');
+                appElement.className = 'app-item';
+                appElement.href = app.url;
+                appElement.target = '_blank';
+                appElement.draggable = true;
+                appElement.dataset.index = index;
+                
+                appElement.innerHTML = `
+                    <div class="app-icon">${app.icon || app.name.charAt(0).toUpperCase()}</div>
+                    <div class="app-name">${app.name}</div>
+                    <button class="delete-btn" onclick="deleteApp(event, ${index})" title="Delete">×</button>
+                `;
+                
+                // Add drag event listeners
+                appElement.addEventListener('dragstart', handleDragStart);
+                appElement.addEventListener('dragover', handleDragOver);
+                appElement.addEventListener('dragenter', handleDragEnter);
+                appElement.addEventListener('dragleave', handleDragLeave);
+                appElement.addEventListener('drop', handleDrop);
+                appElement.addEventListener('dragend', handleDragEnd);
+                
+                grid.appendChild(appElement);
+            });
+        }
+
+        function openModal() {
+            document.getElementById('addModal').style.display = 'block';
+            document.getElementById('appName').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('addModal').style.display = 'none';
+            document.getElementById('addAppForm').reset();
+            const picker = document.getElementById('emojiPicker');
+            if (picker) picker.classList.remove('show');
+        }
+
+        // Emoji picker functions
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            if (picker) {
+                picker.classList.toggle('show');
+            }
+        }
+
+        function selectEmoji(emoji) {
+            const input = document.getElementById('appIcon');
+            const picker = document.getElementById('emojiPicker');
+            
+            if (input) {
+                input.value = emoji;
+            }
+            if (picker) {
+                picker.classList.remove('show');
+            }
+        }
+
+        function deleteApp(event, index) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            if (confirm('Delete this app?')) {
+                apps.splice(index, 1);
+                saveApps();
+                renderApps();
+            }
+        }
+
+        // System monitoring
+        async function getSystemStats() {
+            try {
+                const response = await fetch('/api/stats.php');
+                if (response.ok) {
+                    const stats = await response.json();
+                    updateStatsDisplay(stats);
+                }
+            } catch (error) {
+                console.log('Stats API not available');
+            }
+        }
+
+        function updateStatsDisplay(stats) {
+            document.getElementById('cpuTemp').textContent = `${stats.cpuTemp}°C`;
+            document.getElementById('fail2banCount').textContent = `${stats.fail2banCount} today`;
+            document.getElementById('cpuUsage').textContent = `${stats.cpuUsage}%`;
+            document.getElementById('memUsage').textContent = `${stats.memUsage}%`;
+            document.getElementById('diskUsage').textContent = `${stats.diskUsage}%`;
+            document.getElementById('uptime').textContent = `${stats.uptime} days`;
+        }
+
+        function refreshStats() {
+            getSystemStats();
+        }
+
+        // Docker container management
+        async function getContainers() {
+            try {
+                const response = await fetch('/api/docker.php');
+                if (response.ok) {
+                    const containers = await response.json();
+                    updateContainerDisplay(containers);
+                } else {
+                    document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Docker API not available</div>';
+                }
+            } catch (error) {
+                document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Error loading containers</div>';
+            }
+        }
+
+        function updateContainerDisplay(containers) {
+            const grid = document.getElementById('containerGrid');
+            
+            if (!containers || containers.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">No containers found</div>';
+                return;
+            }
+
+            grid.innerHTML = containers.map(container => `
+                <div class="container-card">
+                    <div class="container-header">
+                        <div class="container-info">
+                            <div class="container-name">${container.name}</div>
+                            <div class="container-image">${container.image}</div>
+                        </div>
+                        <div class="container-status">
+                            <div class="status-dot ${container.status}"></div>
+                            <div class="container-status-text">${container.status}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="container-details">
+                        <div class="container-detail">
+                            <div class="detail-label">Ports</div>
+                            <div class="detail-value">${container.ports || 'None'}</div>
+                        </div>
+                        <div class="container-detail">
+                            <div class="detail-label">Uptime</div>
+                            <div class="detail-value">${container.uptime || '0s'}</div>
+                        </div>
+                        <div class="container-detail">
+                            <div class="detail-label">CPU</div>
+                            <div class="detail-value">${container.cpu || '0%'}</div>
+                        </div>
+                        <div class="container-detail">
+                            <div class="detail-label">Memory</div>
+                            <div class="detail-value">${container.memory || '0MB'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="container-actions">
+                        ${container.status === 'running' ? `
+                            <button class="action-btn stop" onclick="containerAction('${container.name}', 'stop')">Stop</button>
+                            <button class="action-btn restart" onclick="containerAction('${container.name}', 'restart')">Restart</button>
+                        ` : `
+                            <button class="action-btn start" onclick="containerAction('${container.name}', 'start')">Start</button>
+                        `}
+                        <button class="action-btn" onclick="containerLogs('${container.name}')">Logs</button>
+                        <button class="action-btn stop" onclick="removeContainer('${container.name}', false)">Remove</button>
+                        <button class="action-btn purge" onclick="removeContainer('${container.name}', true)">Purge</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Container action functions
+        async function containerAction(containerName, action) {
+            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} container "${containerName}"?`)) {
+                return;
+            }
+
+            try {
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                containerCard.classList.add('loading');
+
+                showStatus('info', `${action.charAt(0).toUpperCase() + action.slice(1)}ing container...`, `Working on ${containerName}`);
+
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        container: containerName,
+                        action: action
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('success', `Container ${action}ed successfully!`, result.output || `${containerName} ${action} completed`);
+                    setTimeout(() => {
+                        getContainers();
+                    }, 1000);
+                } else {
+                    showStatus('error', `Failed to ${action} container`, result.error || result.output || 'Unknown error');
+                    containerCard.classList.remove('loading');
+                }
+            } catch (error) {
+                showStatus('error', `Error ${action}ing container`, error.message);
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                if (containerCard) containerCard.classList.remove('loading');
+            }
+        }
+
+        async function removeContainer(containerName, purge = false) {
+            const action = purge ? 'purge (remove container + volumes + images)' : 'remove container';
+            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} "${containerName}"?`)) {
+                return;
+            }
+
+            try {
+                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                containerCard.classList.add('loading');
+
+                showStatus('info', `${purge ? 'Purging' : 'Removing'} container...`, `Working on ${containerName}`);
+
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        container: containerName,
+                        action: purge ? 'purge' : 'remove'
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('success', `Container ${purge ? 'purged' : 'removed'} successfully!`, result.output || `${containerName} has been ${purge ? 'purged' : 'removed'}`);
+                <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -922,837 +2619,4 @@
     <!-- Add Docker Container Modal -->
     <div class="modal" id="dockerModal">
         <div class="modal-content" style="max-width: 600px;">
-            <h3 class="modal-title">Add Docker Container</h3>
-            
-            <!-- Method Selection -->
-            <div style="margin-bottom: 20px; display: flex; gap: 8px;">
-                <button type="button" class="btn btn-secondary" onclick="showDockerMethod('simple')" id="simpleBtn">Simple Run</button>
-                <button type="button" class="btn btn-secondary" onclick="showDockerMethod('compose')" id="composeBtn">Docker Compose</button>
-            </div>
-            
-            <!-- Simple Docker Run Form -->
-            <form id="dockerSimpleForm" style="display: none;">
-                <div class="form-group">
-                    <label class="form-label">Container Name</label>
-                    <input type="text" class="form-input" id="dockerName" placeholder="my-container" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Docker Image</label>
-                    <input type="text" class="form-input" id="dockerImage" placeholder="nginx:latest" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Ports (optional)</label>
-                    <input type="text" class="form-input" id="dockerPorts" placeholder="8080:80">
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                        Format: host:container (e.g., 8080:80)
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Environment Variables (optional)</label>
-                    <textarea class="form-input" id="dockerEnv" placeholder="VAR1=value1&#10;VAR2=value2" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Volumes (optional)</label>
-                    <input type="text" class="form-input" id="dockerVolumes" placeholder="/host/path:/container/path">
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="btn btn-secondary" onclick="closeDockerModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Deploy Container</button>
-                </div>
-            </form>
-            
-            <!-- Docker Compose Form -->
-            <form id="dockerComposeForm" style="display: none;">
-                <div class="form-group">
-                    <label class="form-label">Docker Compose YAML</label>
-                    <textarea class="form-input" id="dockerCompose" placeholder="version: '3.8'&#10;services:&#10;  web:&#10;    image: nginx:latest&#10;    ports:&#10;      - '8080:80'" rows="12" required></textarea>
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                        Paste your complete docker-compose.yml content here
-                    </div>
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="btn btn-secondary" onclick="closeDockerModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Deploy Compose</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div class="modal" id="settingsModal">
-        <div class="modal-content" style="max-width: 500px;">
-            <h3 class="modal-title">Settings</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                Customize your homepage settings
-            </p>
-            
-            <div class="form-group">
-                <label class="form-label">Page Title</label>
-                <input type="text" class="form-input" id="settingsTitle" placeholder="Home" value="Home">
-            </div>
-            
-            <div class="modal-buttons">
-                <button type="button" class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveSettings()">Save</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Status Bar -->
-    <div class="status-bar" id="statusBar">
-        <div class="status-content">
-            <div class="status-icon" id="statusIcon"></div>
-            <div class="status-message" id="statusMessage"></div>
-            <button class="status-close" onclick="hideStatus()">&times;</button>
-        </div>
-        <div class="status-details" id="statusDetails" style="display: none;"></div>
-    </div>
-
-    <script>
-        // Global variables
-        let apps = [];
-        let settings = { title: 'Home' };
-
-        // API functions for storage
-        async function loadFromAPI() {
-            try {
-                const response = await fetch('/api/storage.php');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        apps = data.data.apps || [];
-                        settings = data.data.settings || { title: 'Home' };
-                        console.log('Data loaded from API');
-                        return true;
-                    }
-                }
-            } catch (error) {
-                console.log('API not available, using fallback data');
-            }
-            
-            // Fallback to default data if API fails
-            apps = [
-                { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
-                { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
-                { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
-            ];
-            settings = { title: 'Home' };
-            return false;
-        }
-
-        async function saveAppsToAPI() {
-            try {
-                const response = await fetch('/api/storage.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        type: 'apps',
-                        data: apps
-                    })
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success) {
-                        console.log('Apps saved to API');
-                        return true;
-                    }
-                }
-            } catch (error) {
-                console.error('Error saving apps to API:', error);
-            }
-            return false;
-        }
-
-        async function saveSettingsToAPI() {
-            try {
-                const response = await fetch('/api/storage.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        type: 'settings',
-                        data: settings
-                    })
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success) {
-                        console.log('Settings saved to API');
-                        return true;
-                    }
-                }
-            } catch (error) {
-                console.error('Error saving settings to API:', error);
-            }
-            return false;
-        }
-
-        // Status bar functions
-        function showStatus(type, message, details = null) {
-            const statusBar = document.getElementById('statusBar');
-            const statusIcon = document.getElementById('statusIcon');
-            const statusMessage = document.getElementById('statusMessage');
-            const statusDetails = document.getElementById('statusDetails');
-            
-            const icons = {
-                success: '✅',
-                error: '❌',
-                info: 'ℹ️',
-                warning: '⚠️'
-            };
-            
-            statusIcon.textContent = icons[type] || 'ℹ️';
-            statusMessage.textContent = message;
-            
-            if (details) {
-                statusDetails.textContent = details;
-                statusDetails.style.display = 'block';
-            } else {
-                statusDetails.style.display = 'none';
-            }
-            
-            statusBar.className = `status-bar ${type}`;
-            
-            setTimeout(() => {
-                statusBar.classList.add('show');
-            }, 100);
-            
-            if (type === 'success') {
-                setTimeout(() => {
-                    hideStatus();
-                }, 3000);
-            }
-        }
-
-        function hideStatus() {
-            const statusBar = document.getElementById('statusBar');
-            statusBar.classList.remove('show');
-        }
-
-        // Theme management (still uses localStorage for theme preference)
-        function initTheme() {
-            const savedTheme = localStorage.getItem('homepage-theme') || 'dark';
-            const themeIcon = document.getElementById('theme-icon');
-            
-            if (savedTheme === 'light') {
-                document.documentElement.setAttribute('data-theme', 'light');
-                themeIcon.textContent = '🌙';
-            } else {
-                themeIcon.textContent = '☀️';
-            }
-        }
-
-        function toggleTheme() {
-            const html = document.documentElement;
-            const themeIcon = document.getElementById('theme-icon');
-            const currentTheme = html.getAttribute('data-theme');
-            
-            if (currentTheme === 'light') {
-                html.removeAttribute('data-theme');
-                themeIcon.textContent = '☀️';
-                localStorage.setItem('homepage-theme', 'dark');
-            } else {
-                html.setAttribute('data-theme', 'light');
-                themeIcon.textContent = '🌙';
-                localStorage.setItem('homepage-theme', 'light');
-            }
-        }
-
-        // Apps management
-        async function loadApps() {
-            await loadFromAPI();
-            renderApps();
-        }
-
-        async function saveApps() {
-            await saveAppsToAPI();
-        }
-
-        // Drag and drop functionality
-        let draggedElement = null;
-        let draggedIndex = null;
-
-        function handleDragStart(e) {
-            draggedElement = this;
-            draggedIndex = parseInt(this.dataset.index);
-            this.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        }
-
-        function handleDragEnter(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
-            }
-            this.classList.add('drag-over');
-            return false;
-        }
-
-        function handleDragOver(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
-            }
-            e.dataTransfer.dropEffect = 'move';
-            return false;
-        }
-
-        function handleDragLeave(e) {
-            this.classList.remove('drag-over');
-        }
-
-        function handleDrop(e) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            }
-            if (e.preventDefault) {
-                e.preventDefault();
-            }
-
-            this.classList.remove('drag-over');
-
-            if (draggedElement !== this) {
-                const dropIndex = parseInt(this.dataset.index);
-                
-                // Reorder the apps array
-                const draggedApp = apps[draggedIndex];
-                apps.splice(draggedIndex, 1);
-                apps.splice(dropIndex, 0, draggedApp);
-                
-                saveApps();
-                renderApps();
-            }
-
-            return false;
-        }
-
-        function handleDragEnd(e) {
-            // Clean up all drag states
-            document.querySelectorAll('.app-item').forEach(item => {
-                item.classList.remove('dragging', 'drag-over');
-            });
-            draggedElement = null;
-            draggedIndex = null;
-        }
-
-        function renderApps() {
-            const grid = document.getElementById('appsGrid');
-            grid.innerHTML = '';
-
-            apps.forEach((app, index) => {
-                const appElement = document.createElement('a');
-                appElement.className = 'app-item';
-                appElement.href = app.url;
-                appElement.target = '_blank';
-                appElement.draggable = true;
-                appElement.dataset.index = index;
-                
-                appElement.innerHTML = `
-                    <div class="app-icon">${app.icon || app.name.charAt(0).toUpperCase()}</div>
-                    <div class="app-name">${app.name}</div>
-                    <button class="delete-btn" onclick="deleteApp(event, ${index})" title="Delete">×</button>
-                `;
-                
-                // Add drag event listeners
-                appElement.addEventListener('dragstart', handleDragStart);
-                appElement.addEventListener('dragover', handleDragOver);
-                appElement.addEventListener('dragenter', handleDragEnter);
-                appElement.addEventListener('dragleave', handleDragLeave);
-                appElement.addEventListener('drop', handleDrop);
-                appElement.addEventListener('dragend', handleDragEnd);
-                
-                grid.appendChild(appElement);
-            });
-        }
-
-        function openModal() {
-            document.getElementById('addModal').style.display = 'block';
-            document.getElementById('appName').focus();
-        }
-
-        function closeModal() {
-            document.getElementById('addModal').style.display = 'none';
-            document.getElementById('addAppForm').reset();
-            // Close emoji picker when modal closes
-            const picker = document.getElementById('emojiPicker');
-            if (picker) picker.classList.remove('show');
-        }
-
-        // Emoji picker functions
-        function toggleEmojiPicker() {
-            const picker = document.getElementById('emojiPicker');
-            if (picker) {
-                picker.classList.toggle('show');
-                console.log('Emoji picker toggled');
-            }
-        }
-
-        function selectEmoji(emoji) {
-            const input = document.getElementById('appIcon');
-            const picker = document.getElementById('emojiPicker');
-            
-            if (input) {
-                input.value = emoji;
-                console.log('Selected emoji:', emoji);
-            }
-            if (picker) {
-                picker.classList.remove('show');
-            }
-        }
-
-        function deleteApp(event, index) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            if (confirm('Delete this app?')) {
-                apps.splice(index, 1);
-                saveApps();
-                renderApps();
-            }
-        }
-
-        // System monitoring
-        async function getSystemStats() {
-            try {
-                const response = await fetch('/api/stats.php');
-                if (response.ok) {
-                    const stats = await response.json();
-                    updateStatsDisplay(stats);
-                }
-            } catch (error) {
-                console.log('Stats API not available');
-            }
-        }
-
-        function updateStatsDisplay(stats) {
-            document.getElementById('cpuTemp').textContent = `${stats.cpuTemp}°C`;
-            document.getElementById('fail2banCount').textContent = `${stats.fail2banCount} today`;
-            document.getElementById('cpuUsage').textContent = `${stats.cpuUsage}%`;
-            document.getElementById('memUsage').textContent = `${stats.memUsage}%`;
-            document.getElementById('diskUsage').textContent = `${stats.diskUsage}%`;
-            document.getElementById('uptime').textContent = `${stats.uptime} days`;
-        }
-
-        function refreshStats() {
-            getSystemStats();
-        }
-
-        // Docker container management
-        async function getContainers() {
-            try {
-                const response = await fetch('/api/docker.php');
-                if (response.ok) {
-                    const containers = await response.json();
-                    updateContainerDisplay(containers);
-                } else {
-                    document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Docker API not available</div>';
-                }
-            } catch (error) {
-                document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Error loading containers</div>';
-            }
-        }
-
-        function updateContainerDisplay(containers) {
-            const grid = document.getElementById('containerGrid');
-            
-            if (!containers || containers.length === 0) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">No containers found</div>';
-                return;
-            }
-
-            grid.innerHTML = containers.map(container => `
-                <div class="container-card">
-                    <div class="container-header">
-                        <div class="container-info">
-                            <div class="container-name">${container.name}</div>
-                            <div class="container-image">${container.image}</div>
-                        </div>
-                        <div class="container-status">
-                            <div class="status-dot ${container.status}"></div>
-                            <div class="container-status-text">${container.status}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="container-details">
-                        <div class="container-detail">
-                            <div class="detail-label">Ports</div>
-                            <div class="detail-value">${container.ports || 'None'}</div>
-                        </div>
-                        <div class="container-detail">
-                            <div class="detail-label">Uptime</div>
-                            <div class="detail-value">${container.uptime || '0s'}</div>
-                        </div>
-                        <div class="container-detail">
-                            <div class="detail-label">CPU</div>
-                            <div class="detail-value">${container.cpu || '0%'}</div>
-                        </div>
-                        <div class="container-detail">
-                            <div class="detail-label">Memory</div>
-                            <div class="detail-value">${container.memory || '0MB'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="container-actions">
-                        ${container.status === 'running' ? `
-                            <button class="action-btn stop" onclick="containerAction('${container.name}', 'stop')">Stop</button>
-                            <button class="action-btn restart" onclick="containerAction('${container.name}', 'restart')">Restart</button>
-                        ` : `
-                            <button class="action-btn start" onclick="containerAction('${container.name}', 'start')">Start</button>
-                        `}
-                        <button class="action-btn" onclick="containerLogs('${container.name}')">Logs</button>
-                        <button class="action-btn stop" onclick="removeContainer('${container.name}', false)">Remove</button>
-                        <button class="action-btn purge" onclick="removeContainer('${container.name}', true)">Purge</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Container action functions
-        async function containerAction(containerName, action) {
-            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} container "${containerName}"?`)) {
-                return;
-            }
-
-            try {
-                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
-                containerCard.classList.add('loading');
-
-                showStatus('info', `${action.charAt(0).toUpperCase() + action.slice(1)}ing container...`, `Working on ${containerName}`);
-
-                const response = await fetch('/api/docker.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        container: containerName,
-                        action: action
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showStatus('success', `Container ${action}ed successfully!`, result.output || `${containerName} ${action} completed`);
-                    setTimeout(() => {
-                        getContainers();
-                    }, 1000);
-                } else {
-                    showStatus('error', `Failed to ${action} container`, result.error || result.output || 'Unknown error');
-                    containerCard.classList.remove('loading');
-                }
-            } catch (error) {
-                showStatus('error', `Error ${action}ing container`, error.message);
-                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
-                if (containerCard) containerCard.classList.remove('loading');
-            }
-        }
-
-        async function removeContainer(containerName, purge = false) {
-            const action = purge ? 'purge (remove container + volumes + images)' : 'remove container';
-            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} "${containerName}"?`)) {
-                return;
-            }
-
-            try {
-                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
-                containerCard.classList.add('loading');
-
-                showStatus('info', `${purge ? 'Purging' : 'Removing'} container...`, `Working on ${containerName}`);
-
-                const response = await fetch('/api/docker.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        container: containerName,
-                        action: purge ? 'purge' : 'remove'
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showStatus('success', `Container ${purge ? 'purged' : 'removed'} successfully!`, result.output || `${containerName} has been ${purge ? 'purged' : 'removed'}`);
-                    setTimeout(() => {
-                        getContainers();
-                    }, 1000);
-                } else {
-                    showStatus('error', `Failed to ${purge ? 'purge' : 'remove'} container`, result.error || result.output || 'Unknown error');
-                    containerCard.classList.remove('loading');
-                }
-            } catch (error) {
-                showStatus('error', `Error ${purge ? 'purging' : 'removing'} container`, error.message);
-                const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
-                if (containerCard) containerCard.classList.remove('loading');
-            }
-        }
-
-        function containerLogs(containerName) {
-            window.open(`/api/docker.php?logs=${containerName}`, '_blank');
-        }
-
-        function refreshContainers() {
-            getContainers();
-        }
-
-        // Settings functions
-        function openSettings() {
-            console.log('Opening settings...');
-            const modal = document.getElementById('settingsModal');
-            if (modal) {
-                // Load current settings into form
-                const titleInput = document.getElementById('settingsTitle');
-                if (titleInput) {
-                    titleInput.value = settings.title || 'Home';
-                }
-                modal.style.display = 'block';
-                console.log('Settings modal opened');
-            } else {
-                console.error('Settings modal not found');
-            }
-        }
-
-        function closeSettings() {
-            console.log('Closing settings...');
-            const modal = document.getElementById('settingsModal');
-            if (modal) {
-                modal.style.display = 'none';
-                console.log('Settings modal closed');
-            }
-        }
-
-        async function saveSettings() {
-            console.log('Saving settings...');
-            const titleInput = document.getElementById('settingsTitle');
-            
-            if (titleInput) {
-                const newTitle = titleInput.value.trim() || 'Home';
-                console.log('New title:', newTitle);
-                
-                // Update settings object
-                settings.title = newTitle;
-                
-                // Update the page display
-                document.querySelector('.logo').textContent = newTitle;
-                document.title = newTitle;
-                
-                // Save to API
-                const saved = await saveSettingsToAPI();
-                
-                // Close modal and show status
-                closeSettings();
-                
-                if (saved) {
-                    showStatus('success', 'Settings saved!');
-                } else {
-                    showStatus('warning', 'Settings saved locally (API unavailable)');
-                }
-                
-                console.log('Settings saved successfully');
-            }
-        }
-
-        async function loadSavedSettings() {
-            await loadFromAPI();
-            const savedTitle = settings.title || 'Home';
-            console.log('Loading saved title:', savedTitle);
-            document.querySelector('.logo').textContent = savedTitle;
-            document.title = savedTitle;
-            
-            // Update settings form if it exists
-            const titleInput = document.getElementById('settingsTitle');
-            if (titleInput) {
-                titleInput.value = savedTitle;
-            }
-        }
-
-        // Docker modal functions
-        function openDockerModal() {
-            document.getElementById('dockerModal').style.display = 'block';
-            showDockerMethod('simple');
-        }
-
-        function closeDockerModal() {
-            const modal = document.getElementById('dockerModal');
-            if (modal) {
-                modal.style.display = 'none';
-                const simpleForm = document.getElementById('dockerSimpleForm');
-                const composeForm = document.getElementById('dockerComposeForm');
-                if (simpleForm) simpleForm.reset();
-                if (composeForm) composeForm.reset();
-            }
-        }
-
-        function showDockerMethod(method) {
-            const simpleForm = document.getElementById('dockerSimpleForm');
-            const composeForm = document.getElementById('dockerComposeForm');
-            const simpleBtn = document.getElementById('simpleBtn');
-            const composeBtn = document.getElementById('composeBtn');
-
-            if (method === 'simple') {
-                if (simpleForm) simpleForm.style.display = 'block';
-                if (composeForm) composeForm.style.display = 'none';
-                if (simpleBtn) {
-                    simpleBtn.style.background = 'var(--accent-color)';
-                    simpleBtn.style.color = 'white';
-                }
-                if (composeBtn) {
-                    composeBtn.style.background = 'none';
-                    composeBtn.style.color = 'var(--text-primary)';
-                }
-            } else {
-                if (simpleForm) simpleForm.style.display = 'none';
-                if (composeForm) composeForm.style.display = 'block';
-                if (composeBtn) {
-                    composeBtn.style.background = 'var(--accent-color)';
-                    composeBtn.style.color = 'white';
-                }
-                if (simpleBtn) {
-                    simpleBtn.style.background = 'none';
-                    simpleBtn.style.color = 'var(--text-primary)';
-                }
-            }
-        }
-
-        async function deployContainer(formData) {
-            try {
-                closeDockerModal();
-                showStatus('info', 'Deploying container...', `Starting deployment of ${formData.name || 'container'}`);
-                
-                const response = await fetch('/api/docker.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showStatus('success', 'Container deployed successfully!', result.output || 'Container is now running');
-                    setTimeout(() => {
-                        getContainers();
-                    }, 2000);
-                } else {
-                    showStatus('error', 'Deployment failed', result.error || result.output || 'Unknown error occurred');
-                }
-            } catch (error) {
-                showStatus('error', 'Deployment error', `Network error: ${error.message}`);
-            }
-        }
-
-        // App form submission
-        document.getElementById('addAppForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('appName').value.trim();
-            const url = document.getElementById('appUrl').value.trim();
-            const icon = document.getElementById('appIcon').value.trim();
-            
-            if (name && url) {
-                apps.push({ name, url, icon });
-                await saveApps();
-                renderApps();
-                closeModal();
-            }
-        });
-
-        // Docker form submissions
-        document.getElementById('dockerSimpleForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                action: 'deploy',
-                method: 'simple',
-                name: document.getElementById('dockerName').value.trim(),
-                image: document.getElementById('dockerImage').value.trim(),
-                ports: document.getElementById('dockerPorts').value.trim(),
-                env: document.getElementById('dockerEnv').value.trim(),
-                volumes: document.getElementById('dockerVolumes').value.trim()
-            };
-            
-            deployContainer(formData);
-        });
-
-        document.getElementById('dockerComposeForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                action: 'deploy',
-                method: 'compose',
-                compose: document.getElementById('dockerCompose').value.trim()
-            };
-            
-            deployContainer(formData);
-        });
-
-        // Modal close on outside click
-        document.getElementById('addModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
-        });
-
-        document.getElementById('dockerModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeDockerModal();
-            }
-        });
-
-        // Settings modal events
-        document.getElementById('settingsModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeSettings();
-            }
-        });
-
-        // Close emoji picker when clicking outside
-        document.addEventListener('click', function(e) {
-            const picker = document.getElementById('emojiPicker');
-            const emojiBtn = document.querySelector('.emoji-btn');
-            
-            if (picker && !picker.contains(e.target) && e.target !== emojiBtn) {
-                picker.classList.remove('show');
-            }
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeModal();
-                closeDockerModal();
-                closeSettings();
-            }
-        });
-
-        // Initialize everything
-        console.log('Initializing page...');
-        initTheme();
-        
-        // Load data from API
-        loadApps().then(() => {
-            console.log('Apps loaded');
-        });
-        
-        loadSavedSettings().then(() => {
-            console.log('Settings loaded');
-        });
-        
-        // Load containers and stats with a small delay
-        setTimeout(() => {
-            getSystemStats();
-            getContainers();
-        }, 1000);
-        
-        // Auto-refresh
-        setInterval(getSystemStats, 30000);
-        setInterval(getContainers, 60000);
-    </script>
-</body>
-</html>
+            <h3 class="modal
