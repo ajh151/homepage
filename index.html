@@ -716,7 +716,10 @@
         <div class="apps-section" style="margin-top: 20px;">
             <div class="apps-header">
                 <h2 class="apps-title">Docker Containers</h2>
-                <button class="add-btn" onclick="refreshContainers()">Refresh</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="add-btn" onclick="openDockerModal()">Add Container</button>
+                    <button class="add-btn" onclick="refreshContainers()">Refresh</button>
+                </div>
             </div>
             <div class="container-grid" id="containerGrid">
                 <!-- Containers will be loaded here -->
@@ -1190,6 +1193,8 @@
                             <button class="action-btn start" onclick="containerAction('${container.name}', 'start')">Start</button>
                         `}
                         <button class="action-btn" onclick="containerLogs('${container.name}')">Logs</button>
+                        <button class="action-btn stop" onclick="removeContainer('${container.name}', false)">Remove</button>
+                        <button class="action-btn stop" onclick="removeContainer('${container.name}', true)" style="background: #dc2626;">Purge</button>
                     </div>
                 </div>
             `).join('');
@@ -1238,6 +1243,133 @@
             window.open(`/api/docker.php?logs=${containerName}`, '_blank');
         }
 
+        async function removeContainer(containerName, purge = false) {
+            const action = purge ? 'purge (remove container + volumes + images)' : 'remove container';
+            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} "${containerName}"?`)) {
+                return;
+            }
+
+            try {
+                const container = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
+                container.classList.add('loading');
+
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        container: containerName,
+                        action: purge ? 'purge' : 'remove'
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    setTimeout(() => {
+                        getContainers();
+                    }, 1000);
+                } else {
+                    alert(`Failed to ${action}: ${result.error || 'Unknown error'}`);
+                    container.classList.remove('loading');
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                container.classList.remove('loading');
+            }
+        }
+
+        // Docker modal functions
+        function openDockerModal() {
+            document.getElementById('dockerModal').style.display = 'block';
+            showDockerMethod('simple');
+        }
+
+        function closeDockerModal() {
+            document.getElementById('dockerModal').style.display = 'none';
+            document.getElementById('dockerSimpleForm').reset();
+            document.getElementById('dockerComposeForm').reset();
+        }
+
+        function showDockerMethod(method) {
+            const simpleForm = document.getElementById('dockerSimpleForm');
+            const composeForm = document.getElementById('dockerComposeForm');
+            const simpleBtn = document.getElementById('simpleBtn');
+            const composeBtn = document.getElementById('composeBtn');
+
+            if (method === 'simple') {
+                simpleForm.style.display = 'block';
+                composeForm.style.display = 'none';
+                simpleBtn.style.background = 'var(--accent-color)';
+                simpleBtn.style.color = 'white';
+                composeBtn.style.background = 'none';
+                composeBtn.style.color = 'var(--text-primary)';
+            } else {
+                simpleForm.style.display = 'none';
+                composeForm.style.display = 'block';
+                composeBtn.style.background = 'var(--accent-color)';
+                composeBtn.style.color = 'white';
+                simpleBtn.style.background = 'none';
+                simpleBtn.style.color = 'var(--text-primary)';
+            }
+        }
+
+        // Handle Docker deployment forms
+        document.getElementById('dockerSimpleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                action: 'deploy',
+                method: 'simple',
+                name: document.getElementById('dockerName').value.trim(),
+                image: document.getElementById('dockerImage').value.trim(),
+                ports: document.getElementById('dockerPorts').value.trim(),
+                env: document.getElementById('dockerEnv').value.trim(),
+                volumes: document.getElementById('dockerVolumes').value.trim()
+            };
+            
+            await deployContainer(formData);
+        });
+
+        document.getElementById('dockerComposeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                action: 'deploy',
+                method: 'compose',
+                compose: document.getElementById('dockerCompose').value.trim()
+            };
+            
+            await deployContainer(formData);
+        });
+
+        async function deployContainer(formData) {
+            try {
+                const response = await fetch('/api/docker.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeDockerModal();
+                    alert('Container deployed successfully!');
+                    setTimeout(() => {
+                        getContainers();
+                    }, 2000);
+                } else {
+                    alert(`Deployment failed: ${result.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
         function refreshContainers() {
             // Show loading state
             document.getElementById('containerGrid').style.opacity = '0.6';
@@ -1247,6 +1379,13 @@
                 document.getElementById('containerGrid').style.opacity = '1';
             }, 500);
         }
+
+        // Close docker modal when clicking outside
+        document.getElementById('dockerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDockerModal();
+            }
+        });
 
         // Initialize
         initTheme();
