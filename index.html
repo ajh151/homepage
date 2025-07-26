@@ -672,7 +672,7 @@
         <div class="header">
             <div class="logo" id="pageTitle">Home</div>
             <div style="display: flex; gap: 8px;">
-                <button class="theme-toggle" onclick="openSettings()">
+                <button class="theme-toggle" onclick="console.log('Settings clicked'); openSettings();">
                     <span>⚙️</span>
                 </button>
                 <button class="theme-toggle" onclick="toggleTheme()">
@@ -988,89 +988,6 @@
             statusBar.classList.remove('show');
         }
 
-        // Settings management
-        function loadSettings() {
-            const saved = localStorage.getItem('homepage-settings');
-            if (saved) {
-                try {
-                    settings = { ...settings, ...JSON.parse(saved) };
-                } catch (e) {
-                    console.error('Error loading settings:', e);
-                }
-            }
-            applySettings();
-        }
-
-        function saveSettings() {
-            localStorage.setItem('homepage-settings', JSON.stringify(settings));
-            applySettings();
-        }
-
-        function applySettings() {
-            // Update page title
-            document.getElementById('pageTitle').textContent = settings.title;
-            document.title = settings.title;
-
-            // Update search form
-            const searchForm = document.querySelector('.search-form');
-            searchForm.action = searchEngines[settings.searchEngine];
-
-            // Show/hide sections
-            const systemStatsSection = document.querySelector('.apps-section:nth-of-type(2)');
-            const dockerSection = document.querySelector('.apps-section:nth-of-type(3)');
-            
-            if (systemStatsSection) {
-                systemStatsSection.style.display = settings.showSystemStats ? 'block' : 'none';
-            }
-            if (dockerSection) {
-                dockerSection.style.display = settings.showDockerContainers ? 'block' : 'none';
-            }
-
-            // Apply theme
-            const savedTheme = localStorage.getItem('homepage-theme') || settings.defaultTheme;
-            if (savedTheme === 'light') {
-                document.documentElement.setAttribute('data-theme', 'light');
-                document.getElementById('theme-icon').textContent = '🌙';
-            } else {
-                document.documentElement.removeAttribute('data-theme');
-                document.getElementById('theme-icon').textContent = '☀️';
-            }
-        }
-
-        function openSettings() {
-            // Load current settings into form
-            document.getElementById('settingsTitle').value = settings.title;
-            document.getElementById('settingsSearchEngine').value = settings.searchEngine;
-            document.getElementById('settingsStatsInterval').value = settings.statsInterval;
-            document.getElementById('settingsDockerInterval').value = settings.dockerInterval;
-            document.getElementById('settingsDefaultTheme').value = settings.defaultTheme;
-            document.getElementById('showSystemStats').checked = settings.showSystemStats;
-            document.getElementById('showDockerContainers').checked = settings.showDockerContainers;
-
-            document.getElementById('settingsModal').style.display = 'block';
-        }
-
-        function closeSettings() {
-            document.getElementById('settingsModal').style.display = 'none';
-        }
-
-        function resetSettings() {
-            if (confirm('Reset all settings to defaults? This cannot be undone.')) {
-                settings = {
-                    title: 'Home',
-                    searchEngine: 'google',
-                    statsInterval: 30,
-                    dockerInterval: 60,
-                    defaultTheme: 'dark',
-                    showSystemStats: true,
-                    showDockerContainers: true
-                };
-                saveSettings();
-                openSettings(); // Refresh the form
-                showStatus('success', 'Settings reset to defaults');
-            }
-        }
-
         // Theme management
         function initTheme() {
             const savedTheme = localStorage.getItem('homepage-theme') || 'dark';
@@ -1097,6 +1014,129 @@
                 html.setAttribute('data-theme', 'light');
                 themeIcon.textContent = '🌙';
                 localStorage.setItem('homepage-theme', 'light');
+            }
+        }
+
+        // Settings management functions (moved here to be available globally)
+        function loadSettings() {
+            const saved = localStorage.getItem('homepage-settings');
+            if (saved) {
+                try {
+                    settings = { ...settings, ...JSON.parse(saved) };
+                } catch (e) {
+                    console.error('Error loading settings:', e);
+                }
+            }
+            applySettings();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('homepage-settings', JSON.stringify(settings));
+            applySettings();
+        }
+
+        function applySettings() {
+            // Update page title
+            const pageTitle = document.getElementById('pageTitle');
+            if (pageTitle) {
+                pageTitle.textContent = settings.title;
+                document.title = settings.title;
+            }
+
+            // Update search form
+            const searchForm = document.querySelector('.search-form');
+            if (searchForm && searchEngines[settings.searchEngine]) {
+                searchForm.action = searchEngines[settings.searchEngine];
+            }
+
+            // Show/hide sections
+            const systemStatsSection = document.querySelector('.apps-section:nth-of-type(2)');
+            const dockerSection = document.querySelector('.apps-section:nth-of-type(3)');
+            
+            if (systemStatsSection) {
+                systemStatsSection.style.display = settings.showSystemStats ? 'block' : 'none';
+            }
+            if (dockerSection) {
+                dockerSection.style.display = settings.showDockerContainers ? 'block' : 'none';
+            }
+        }
+
+        function openSettings() {
+            console.log('Opening settings modal...');
+            
+            // Initialize settings if not already done
+            if (typeof settings === 'undefined') {
+                console.log('Initializing settings...');
+                settings = {
+                    title: 'Home',
+                    searchEngine: 'google',
+                    statsInterval: 30,
+                    dockerInterval: 60,
+                    defaultTheme: 'dark',
+                    showSystemStats: true,
+                    showDockerContainers: true
+                };
+                
+                // Try to load saved settings
+                const saved = localStorage.getItem('homepage-settings');
+                if (saved) {
+                    try {
+                        settings = { ...settings, ...JSON.parse(saved) };
+                        console.log('Loaded saved settings:', settings);
+                    } catch (e) {
+                        console.error('Error loading settings:', e);
+                    }
+                }
+            }
+            
+            const modal = document.getElementById('settingsModal');
+            if (!modal) {
+                console.error('Settings modal not found!');
+                return;
+            }
+
+            // Load current settings into form
+            const titleInput = document.getElementById('settingsTitle');
+            const searchSelect = document.getElementById('settingsSearchEngine');
+            const statsInput = document.getElementById('settingsStatsInterval');
+            const dockerInput = document.getElementById('settingsDockerInterval');
+            const themeSelect = document.getElementById('settingsDefaultTheme');
+            const showStats = document.getElementById('showSystemStats');
+            const showDocker = document.getElementById('showDockerContainers');
+
+            if (titleInput) titleInput.value = settings.title;
+            if (searchSelect) searchSelect.value = settings.searchEngine;
+            if (statsInput) statsInput.value = settings.statsInterval;
+            if (dockerInput) dockerInput.value = settings.dockerInterval;
+            if (themeSelect) themeSelect.value = settings.defaultTheme;
+            if (showStats) showStats.checked = settings.showSystemStats;
+            if (showDocker) showDocker.checked = settings.showDockerContainers;
+
+            modal.style.display = 'block';
+            console.log('Settings modal opened');
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function resetSettings() {
+            if (confirm('Reset all settings to defaults? This cannot be undone.')) {
+                settings = {
+                    title: 'Home',
+                    searchEngine: 'google',
+                    statsInterval: 30,
+                    dockerInterval: 60,
+                    defaultTheme: 'dark',
+                    showSystemStats: true,
+                    showDockerContainers: true
+                };
+                saveSettings();
+                openSettings(); // Refresh the form
+                showStatus('success', 'Settings reset to defaults');
             }
         }
 
