@@ -585,27 +585,6 @@
             color: var(--text-secondary);
         }
 
-        select.form-input {
-            cursor: pointer;
-        }
-
-        input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--accent-color);
-            cursor: pointer;
-        }
-
-        input[type="number"] {
-            -moz-appearance: textfield;
-        }
-
-        input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
         .modal-buttons {
             display: flex;
             gap: 12px;
@@ -670,24 +649,16 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div class="logo" id="pageTitle">Home</div>
-            <div style="display: flex; gap: 8px;">
-                <button class="theme-toggle" onclick="alert('Settings clicked'); openSettings();">
-                    <span⚙️</span>
-                </button>
-                <button class="theme-toggle" onclick="toggleTheme()">
-                    <span id="theme-icon">☀️</span>
-                </button>
-                <button class="theme-toggle" onclick="alert('Debug: ' + typeof settings);">
-                    <span>🐛</span>
-                </button>
-            </div>
+            <div class="logo">Home</div>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="theme-icon"☀️</span>
+            </button>
         </div>
 
         <!-- Search Section -->
         <div class="search-section">
-            <form class="search-form" action="https://www.google.com/search" method="get" id="searchForm">
-                <input type="text" name="q" class="search-input" placeholder="Search..." autocomplete="off" id="searchInput">
+            <form class="search-form" action="https://www.google.com/search" method="get">
+                <input type="text" name="q" class="search-input" placeholder="Search..." autocomplete="off">
                 <button type="submit" class="search-btn">Search</button>
             </form>
         </div>
@@ -854,78 +825,6 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div class="modal" id="settingsModal">
-        <div class="modal-content" style="max-width: 500px;">
-            <h3 class="modal-title">Settings</h3>
-            
-            <form id="settingsForm">
-                <div class="form-group">
-                    <label class="form-label">Page Title</label>
-                    <input type="text" class="form-input" id="settingsTitle" placeholder="Home" value="Home">
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                        The title shown in the top-left corner
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Search Engine</label>
-                    <select class="form-input" id="settingsSearchEngine">
-                        <option value="google">Google</option>
-                        <option value="duckduckgo">DuckDuckGo</option>
-                        <option value="bing">Bing</option>
-                        <option value="startpage">Startpage</option>
-                    </select>
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                        Default search engine for the search bar
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Auto-refresh Intervals</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div>
-                            <label class="form-label" style="font-size: 12px; margin-bottom: 4px;">System Stats (seconds)</label>
-                            <input type="number" class="form-input" id="settingsStatsInterval" value="30" min="5" max="300">
-                        </div>
-                        <div>
-                            <label class="form-label" style="font-size: 12px; margin-bottom: 4px;">Docker (seconds)</label>
-                            <input type="number" class="form-input" id="settingsDockerInterval" value="60" min="10" max="600">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Default Theme</label>
-                    <select class="form-input" id="settingsDefaultTheme">
-                        <option value="dark">Dark</option>
-                        <option value="light">Light</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Show Sections</label>
-                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
-                            <input type="checkbox" id="showSystemStats" checked>
-                            <span>System Status</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
-                            <input type="checkbox" id="showDockerContainers" checked>
-                            <span>Docker Containers</span>
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="modal-buttons">
-                    <button type="button" class="btn btn-secondary" onclick="resetSettings()">Reset to Defaults</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveSettingsFromForm()">Save Settings</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Status Bar -->
     <div class="status-bar" id="statusBar">
         <div class="status-content">
@@ -937,7 +836,7 @@
     </div>
 
     <script>
-        // Apps data
+        // Global variables
         let apps = [
             { name: 'Plex', url: 'http://localhost:32400', icon: '🎬' },
             { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
@@ -951,7 +850,6 @@
             const statusMessage = document.getElementById('statusMessage');
             const statusDetails = document.getElementById('statusDetails');
             
-            // Set icon based on type
             const icons = {
                 success: '✅',
                 error: '❌',
@@ -962,7 +860,6 @@
             statusIcon.textContent = icons[type] || 'ℹ️';
             statusMessage.textContent = message;
             
-            // Show details if provided
             if (details) {
                 statusDetails.textContent = details;
                 statusDetails.style.display = 'block';
@@ -970,15 +867,12 @@
                 statusDetails.style.display = 'none';
             }
             
-            // Set type class
             statusBar.className = `status-bar ${type}`;
             
-            // Show the status bar
             setTimeout(() => {
                 statusBar.classList.add('show');
             }, 100);
             
-            // Auto-hide success messages after 3 seconds
             if (type === 'success') {
                 setTimeout(() => {
                     hideStatus();
@@ -1020,177 +914,6 @@
             }
         }
 
-        // Settings management functions (moved here to be available globally)
-        function loadSettings() {
-            console.log('Loading settings...');
-            const saved = localStorage.getItem('homepage-settings');
-            console.log('Raw localStorage data:', saved);
-            
-            if (saved) {
-                try {
-                    const savedSettings = JSON.parse(saved);
-                    console.log('Parsed saved settings:', savedSettings);
-                    settings = { ...settings, ...savedSettings };
-                    console.log('Merged settings:', settings);
-                } catch (e) {
-                    console.error('Error loading settings:', e);
-                }
-            } else {
-                console.log('No saved settings found, using defaults');
-            }
-            applySettings();
-        }
-
-        function saveSettings() {
-            localStorage.setItem('homepage-settings', JSON.stringify(settings));
-            console.log('Settings saved:', settings);
-            applySettings();
-        }
-
-        function applySettings() {
-            console.log('Applying settings:', settings);
-            
-            // Update page title
-            const pageTitle = document.getElementById('pageTitle');
-            if (pageTitle) {
-                pageTitle.textContent = settings.title;
-                document.title = settings.title;
-            }
-
-            // Update search form action and parameter
-            const searchForm = document.getElementById('searchForm');
-            const searchInput = document.getElementById('searchInput');
-            
-            if (searchForm && searchInput && searchEngines[settings.searchEngine]) {
-                const engine = searchEngines[settings.searchEngine];
-                searchForm.action = engine.url;
-                searchInput.name = engine.param;
-                console.log('Search engine set to:', engine.url, 'with parameter:', engine.param);
-            }
-
-            // Show/hide sections
-            const systemStatsSection = document.querySelector('.apps-section:nth-of-type(2)');
-            const dockerSection = document.querySelector('.apps-section:nth-of-type(3)');
-            
-            if (systemStatsSection) {
-                systemStatsSection.style.display = settings.showSystemStats ? 'block' : 'none';
-            }
-            if (dockerSection) {
-                dockerSection.style.display = settings.showDockerContainers ? 'block' : 'none';
-            }
-        }
-
-        function openSettings() {
-            console.log('Opening settings modal...');
-            
-            // Initialize settings if not already done
-            if (typeof settings === 'undefined') {
-                console.log('Initializing settings...');
-                settings = {
-                    title: 'Home',
-                    searchEngine: 'google',
-                    statsInterval: 30,
-                    dockerInterval: 60,
-                    defaultTheme: 'dark',
-                    showSystemStats: true,
-                    showDockerContainers: true
-                };
-                
-                // Try to load saved settings
-                const saved = localStorage.getItem('homepage-settings');
-                if (saved) {
-                    try {
-                        settings = { ...settings, ...JSON.parse(saved) };
-                        console.log('Loaded saved settings:', settings);
-                    } catch (e) {
-                        console.error('Error loading settings:', e);
-                    }
-                }
-            }
-            
-            const modal = document.getElementById('settingsModal');
-            if (!modal) {
-                console.error('Settings modal not found!');
-                return;
-            }
-
-            // Load current settings into form
-            const titleInput = document.getElementById('settingsTitle');
-            const searchSelect = document.getElementById('settingsSearchEngine');
-            const statsInput = document.getElementById('settingsStatsInterval');
-            const dockerInput = document.getElementById('settingsDockerInterval');
-            const themeSelect = document.getElementById('settingsDefaultTheme');
-            const showStats = document.getElementById('showSystemStats');
-            const showDocker = document.getElementById('showDockerContainers');
-
-            if (titleInput) titleInput.value = settings.title;
-            if (searchSelect) searchSelect.value = settings.searchEngine;
-            if (statsInput) statsInput.value = settings.statsInterval;
-            if (dockerInput) dockerInput.value = settings.dockerInterval;
-            if (themeSelect) themeSelect.value = settings.defaultTheme;
-            if (showStats) showStats.checked = settings.showSystemStats;
-            if (showDocker) showDocker.checked = settings.showDockerContainers;
-
-            modal.style.display = 'block';
-            console.log('Settings modal opened');
-        }
-
-        function closeSettings() {
-            console.log('Closing settings modal...');
-            const modal = document.getElementById('settingsModal');
-            if (modal) {
-                modal.style.display = 'none';
-                console.log('Settings modal closed');
-            } else {
-                console.error('Settings modal not found when trying to close');
-            }
-        }
-
-        function resetSettings() {
-            if (confirm('Reset all settings to defaults? This cannot be undone.')) {
-                settings = {
-                    title: 'Home',
-                    searchEngine: 'google',
-                    statsInterval: 30,
-                    dockerInterval: 60,
-                    defaultTheme: 'dark',
-                    showSystemStats: true,
-                    showDockerContainers: true
-                };
-                saveSettings();
-                openSettings(); // Refresh the form
-                showStatus('success', 'Settings reset to defaults');
-            }
-        }
-
-        function saveSettingsFromForm() {
-            alert('Save button clicked!'); // Test if this works
-            
-            // Get form values
-            const titleInput = document.getElementById('settingsTitle');
-            const searchSelect = document.getElementById('settingsSearchEngine');
-            
-            if (titleInput && searchSelect) {
-                settings.title = titleInput.value.trim() || 'Home';
-                settings.searchEngine = searchSelect.value;
-                
-                alert('Saving: ' + settings.title + ' / ' + settings.searchEngine);
-                
-                // Save to localStorage
-                localStorage.setItem('homepage-settings', JSON.stringify(settings));
-                
-                // Apply settings
-                document.getElementById('pageTitle').textContent = settings.title;
-                
-                // Close modal
-                closeSettings();
-                
-                alert('Settings saved!');
-            } else {
-                alert('Form elements not found!');
-            }
-        }
-
         // Apps management
         function loadApps() {
             const saved = localStorage.getItem('homepage-apps');
@@ -1208,7 +931,7 @@
             localStorage.setItem('homepage-apps', JSON.stringify(apps));
         }
 
-        // Drag and drop functionality (defined before renderApps)
+        // Drag and drop functionality
         let draggedElement = null;
         let draggedIndex = null;
 
@@ -1217,9 +940,6 @@
             draggedIndex = parseInt(this.dataset.index);
             this.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', this.outerHTML);
-            
-            console.log('Drag started:', apps[draggedIndex].name);
         }
 
         function handleDragEnter(e) {
@@ -1255,8 +975,6 @@
             if (draggedElement !== this) {
                 const dropIndex = parseInt(this.dataset.index);
                 
-                console.log('Dropping:', apps[draggedIndex].name, 'at position', dropIndex);
-                
                 // Reorder the apps array
                 const draggedApp = apps[draggedIndex];
                 apps.splice(draggedIndex, 1);
@@ -1264,8 +982,6 @@
                 
                 saveApps();
                 renderApps();
-                
-                console.log('Apps reordered successfully');
             }
 
             return false;
@@ -1278,8 +994,6 @@
             });
             draggedElement = null;
             draggedIndex = null;
-            
-            console.log('Drag ended');
         }
 
         function renderApps() {
@@ -1300,7 +1014,7 @@
                     <button class="delete-btn" onclick="deleteApp(event, ${index})" title="Delete">×</button>
                 `;
                 
-                // Add drag event listeners to each app
+                // Add drag event listeners
                 appElement.addEventListener('dragstart', handleDragStart);
                 appElement.addEventListener('dragover', handleDragOver);
                 appElement.addEventListener('dragenter', handleDragEnter);
@@ -1362,28 +1076,15 @@
         // Docker container management
         async function getContainers() {
             try {
-                console.log('Fetching containers...');
-                
-                // Show loading state
-                const grid = document.getElementById('containerGrid');
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Loading containers...</div>';
-                
                 const response = await fetch('/api/docker.php');
-                console.log('Docker API response status:', response.status);
-                
                 if (response.ok) {
                     const containers = await response.json();
-                    console.log('Containers received:', containers);
                     updateContainerDisplay(containers);
                 } else {
-                    console.log('Docker API not available, status:', response.status);
-                    const grid = document.getElementById('containerGrid');
-                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Docker API not available</div>';
+                    document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Docker API not available</div>';
                 }
             } catch (error) {
-                console.error('Error fetching containers:', error);
-                const grid = document.getElementById('containerGrid');
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Error loading containers</div>';
+                document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Error loading containers</div>';
             }
         }
 
@@ -1442,10 +1143,6 @@
             `).join('');
         }
 
-        function refreshContainers() {
-            getContainers();
-        }
-
         // Container action functions
         async function containerAction(containerName, action) {
             if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} container "${containerName}"?`)) {
@@ -1453,7 +1150,6 @@
             }
 
             try {
-                // Find the container card and show loading state
                 const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
                 containerCard.classList.add('loading');
 
@@ -1471,12 +1167,9 @@
                 });
 
                 const result = await response.json();
-                console.log(`${action} result:`, result);
                 
                 if (result.success) {
                     showStatus('success', `Container ${action}ed successfully!`, result.output || `${containerName} ${action} completed`);
-                    
-                    // Refresh containers after action
                     setTimeout(() => {
                         getContainers();
                     }, 1000);
@@ -1485,9 +1178,7 @@
                     containerCard.classList.remove('loading');
                 }
             } catch (error) {
-                console.error(`Error ${action} container:`, error);
                 showStatus('error', `Error ${action}ing container`, error.message);
-                // Remove loading state on error
                 const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
                 if (containerCard) containerCard.classList.remove('loading');
             }
@@ -1500,7 +1191,6 @@
             }
 
             try {
-                // Find the container card and show loading state
                 const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
                 containerCard.classList.add('loading');
 
@@ -1518,12 +1208,9 @@
                 });
 
                 const result = await response.json();
-                console.log(`${purge ? 'purge' : 'remove'} result:`, result);
                 
                 if (result.success) {
                     showStatus('success', `Container ${purge ? 'purged' : 'removed'} successfully!`, result.output || `${containerName} has been ${purge ? 'purged' : 'removed'}`);
-                    
-                    // Refresh containers after removal
                     setTimeout(() => {
                         getContainers();
                     }, 1000);
@@ -1532,34 +1219,30 @@
                     containerCard.classList.remove('loading');
                 }
             } catch (error) {
-                console.error(`Error ${purge ? 'purging' : 'removing'} container:`, error);
                 showStatus('error', `Error ${purge ? 'purging' : 'removing'} container`, error.message);
-                // Remove loading state on error
                 const containerCard = document.querySelector(`[onclick*="${containerName}"]`).closest('.container-card');
                 if (containerCard) containerCard.classList.remove('loading');
             }
         }
 
         function containerLogs(containerName) {
-            // Open logs in new window/tab
             window.open(`/api/docker.php?logs=${containerName}`, '_blank');
+        }
+
+        function refreshContainers() {
+            getContainers();
         }
 
         // Docker modal functions
         function openDockerModal() {
-            console.log('Opening Docker modal...');
-            const modal = document.getElementById('dockerModal');
-            if (modal) {
-                modal.style.display = 'block';
-                showDockerMethod('simple'); // Default to simple method
-            }
+            document.getElementById('dockerModal').style.display = 'block';
+            showDockerMethod('simple');
         }
 
         function closeDockerModal() {
             const modal = document.getElementById('dockerModal');
             if (modal) {
                 modal.style.display = 'none';
-                // Reset forms
                 const simpleForm = document.getElementById('dockerSimpleForm');
                 const composeForm = document.getElementById('dockerComposeForm');
                 if (simpleForm) simpleForm.reset();
@@ -1600,12 +1283,7 @@
 
         async function deployContainer(formData) {
             try {
-                console.log('Deploying container with data:', formData);
-                
-                // Close the modal immediately when deploy is clicked
                 closeDockerModal();
-                
-                // Show deployment started status
                 showStatus('info', 'Deploying container...', `Starting deployment of ${formData.name || 'container'}`);
                 
                 const response = await fetch('/api/docker.php', {
@@ -1617,12 +1295,9 @@
                 });
 
                 const result = await response.json();
-                console.log('Deployment result:', result);
                 
                 if (result.success) {
                     showStatus('success', 'Container deployed successfully!', result.output || 'Container is now running');
-                    
-                    // Refresh containers after deployment
                     setTimeout(() => {
                         getContainers();
                     }, 2000);
@@ -1630,7 +1305,6 @@
                     showStatus('error', 'Deployment failed', result.error || result.output || 'Unknown error occurred');
                 }
             } catch (error) {
-                console.error('Deployment error:', error);
                 showStatus('error', 'Deployment error', `Network error: ${error.message}`);
             }
         }
@@ -1650,80 +1324,6 @@
                 closeModal();
             }
         });
-
-        // Modal close on outside click
-        document.getElementById('addModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
-        });
-
-        // Docker modal event listeners
-        document.getElementById('dockerModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeDockerModal();
-            }
-        });
-
-        // Settings modal event listeners
-        document.getElementById('settingsModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeSettings();
-            }
-        });
-
-        // Settings form submission
-        const settingsForm = document.getElementById('settingsForm');
-        if (settingsForm) {
-            settingsForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                console.log('Settings form submitted');
-                
-                // Get values from form and update settings
-                const titleValue = document.getElementById('settingsTitle').value.trim();
-                const searchValue = document.getElementById('settingsSearchEngine').value;
-                const statsValue = parseInt(document.getElementById('settingsStatsInterval').value);
-                const dockerValue = parseInt(document.getElementById('settingsDockerInterval').value);
-                const themeValue = document.getElementById('settingsDefaultTheme').value;
-                const showStatsValue = document.getElementById('showSystemStats').checked;
-                const showDockerValue = document.getElementById('showDockerContainers').checked;
-                
-                console.log('Form values:', {
-                    title: titleValue,
-                    search: searchValue,
-                    stats: statsValue,
-                    docker: dockerValue,
-                    theme: themeValue,
-                    showStats: showStatsValue,
-                    showDocker: showDockerValue
-                });
-                
-                // Update settings object
-                settings.title = titleValue || 'Home';
-                settings.searchEngine = searchValue;
-                settings.statsInterval = statsValue || 30;
-                settings.dockerInterval = dockerValue || 60;
-                settings.defaultTheme = themeValue;
-                settings.showSystemStats = showStatsValue;
-                settings.showDockerContainers = showDockerValue;
-                
-                console.log('Updated settings object:', settings);
-                
-                // Save settings
-                saveSettings();
-                
-                // Close modal
-                closeSettings();
-                
-                // Show success message
-                showStatus('success', 'Settings saved successfully!');
-                
-                // Note: Page will reload on next visit to apply new intervals
-            });
-            console.log('Settings form event listener added');
-        } else {
-            console.error('Settings form not found!');
-        }
 
         // Docker form submissions
         document.getElementById('dockerSimpleForm').addEventListener('submit', function(e) {
@@ -1754,26 +1354,38 @@
             deployContainer(formData);
         });
 
+        // Modal close on outside click
+        document.getElementById('addModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        document.getElementById('dockerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDockerModal();
+            }
+        });
+
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeModal();
                 closeDockerModal();
-                closeSettings();
             }
         });
 
         // Initialize everything
         initTheme();
         loadApps();
-        getSystemStats();
         
-        // Load containers with a small delay to ensure API is ready
+        // Load containers and stats with a small delay
         setTimeout(() => {
+            getSystemStats();
             getContainers();
         }, 1000);
         
-        // Auto-refresh stats and containers
+        // Auto-refresh
         setInterval(getSystemStats, 30000);
         setInterval(getContainers, 60000);
     </script>
