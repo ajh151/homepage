@@ -650,9 +650,14 @@
         <!-- Header -->
         <div class="header">
             <div class="logo">Home</div>
-            <button class="theme-toggle" onclick="toggleTheme()">
-                <span id="theme-icon"☀️</span>
-            </button>
+            <div style="display: flex; gap: 8px;">
+                <button class="theme-toggle" onclick="openSettings()">
+                    <span>⚙️</span>
+                </button>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <span id="theme-icon">☀️</span>
+                </button>
+            </div>
         </div>
 
         <!-- Search Section -->
@@ -822,6 +827,26 @@
                     <button type="submit" class="btn btn-primary">Deploy Compose</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 class="modal-title">Settings</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                Customize your homepage settings
+            </p>
+            
+            <div class="form-group">
+                <label class="form-label">Page Title</label>
+                <input type="text" class="form-input" id="settingsTitle" placeholder="Home" value="Home">
+            </div>
+            
+            <div class="modal-buttons">
+                <button type="button" class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettings()">Save</button>
+            </div>
         </div>
     </div>
 
@@ -1233,6 +1258,65 @@
             getContainers();
         }
 
+        // Settings functions (simple and clean)
+        function openSettings() {
+            console.log('Opening settings...');
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('Settings modal opened');
+            } else {
+                console.error('Settings modal not found');
+            }
+        }
+
+        function closeSettings() {
+            console.log('Closing settings...');
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('Settings modal closed');
+            }
+        }
+
+        function saveSettings() {
+            console.log('Saving settings...');
+            const titleInput = document.getElementById('settingsTitle');
+            
+            if (titleInput) {
+                const newTitle = titleInput.value.trim() || 'Home';
+                console.log('New title:', newTitle);
+                
+                // Update the page title
+                document.querySelector('.logo').textContent = newTitle;
+                document.title = newTitle;
+                
+                // Save to localStorage
+                localStorage.setItem('homepage-title', newTitle);
+                
+                // Close modal and show success
+                closeSettings();
+                showStatus('success', 'Settings saved!');
+                
+                console.log('Settings saved successfully');
+            }
+        }
+
+        function loadSavedTitle() {
+            const savedTitle = localStorage.getItem('homepage-title');
+            if (savedTitle) {
+                console.log('Loading saved title:', savedTitle);
+                document.querySelector('.logo').textContent = savedTitle;
+                document.title = savedTitle;
+                
+                // Update settings form if it exists
+                const titleInput = document.getElementById('settingsTitle');
+                if (titleInput) {
+                    titleInput.value = savedTitle;
+                }
+            }
+        }
+
         // Docker modal functions
         function openDockerModal() {
             document.getElementById('dockerModal').style.display = 'block';
@@ -1367,17 +1451,27 @@
             }
         });
 
+        // Settings modal events
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
+            }
+        });
+
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeModal();
                 closeDockerModal();
+                closeSettings();
             }
         });
 
         // Initialize everything
+        console.log('Initializing page...');
         initTheme();
         loadApps();
+        loadSavedTitle(); // Load saved page title
         
         // Load containers and stats with a small delay
         setTimeout(() => {
