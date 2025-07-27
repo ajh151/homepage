@@ -585,6 +585,23 @@
             color: var(--text-secondary);
         }
 
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: border-color 0.3s ease;
+            cursor: pointer;
+        }
+
+        .form-select:focus {
+            border-color: var(--accent-color);
+        }
+
         .modal-buttons {
             display: flex;
             gap: 12px;
@@ -706,6 +723,16 @@
             background: var(--hover-bg);
         }
 
+        .search-engine-preview {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
         @media (max-width: 480px) {
             body {
                 padding: 20px 16px;
@@ -747,7 +774,7 @@
 
         <!-- Search Section -->
         <div class="search-section">
-            <form class="search-form" action="https://www.google.com/search" method="get">
+            <form class="search-form" id="searchForm" action="https://www.google.com/search" method="get">
                 <input type="text" name="q" class="search-input" placeholder="Search..." autocomplete="off">
                 <button type="submit" class="search-btn">Search</button>
             </form>
@@ -991,6 +1018,32 @@
                 <input type="text" class="form-input" id="settingsTitle" placeholder="Home" value="Home">
             </div>
             
+            <div class="form-group">
+                <label class="form-label">Search Engine</label>
+                <select class="form-select" id="searchEngine" onchange="updateSearchEnginePreview()">
+                    <option value="google">Google</option>
+                    <option value="duckduckgo">DuckDuckGo</option>
+                    <option value="bing">Bing</option>
+                    <option value="brave">Brave Search</option>
+                    <option value="startpage">Startpage</option>
+                    <option value="searx">Searx</option>
+                    <option value="qwant">Qwant</option>
+                    <option value="ecosia">Ecosia</option>
+                    <option value="custom">Custom URL</option>
+                </select>
+                <div class="search-engine-preview" id="searchEnginePreview">
+                    Search URL: https://www.google.com/search?q=
+                </div>
+            </div>
+            
+            <div class="form-group" id="customSearchGroup" style="display: none;">
+                <label class="form-label">Custom Search URL</label>
+                <input type="text" class="form-input" id="customSearchUrl" placeholder="https://example.com/search?q=">
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                    Use {query} or leave empty to append query at the end
+                </div>
+            </div>
+            
             <div class="modal-buttons">
                 <button type="button" class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="saveSettings()">Save</button>
@@ -1011,7 +1064,55 @@
     <script>
         // Global variables
         let apps = [];
-        let settings = { title: 'Home' };
+        let settings = { 
+            title: 'Home',
+            searchEngine: 'google',
+            customSearchUrl: ''
+        };
+
+        // Search engine configurations
+        const searchEngines = {
+            google: {
+                name: 'Google',
+                url: 'https://www.google.com/search',
+                param: 'q'
+            },
+            duckduckgo: {
+                name: 'DuckDuckGo',
+                url: 'https://duckduckgo.com/',
+                param: 'q'
+            },
+            bing: {
+                name: 'Bing',
+                url: 'https://www.bing.com/search',
+                param: 'q'
+            },
+            brave: {
+                name: 'Brave Search',
+                url: 'https://search.brave.com/search',
+                param: 'q'
+            },
+            startpage: {
+                name: 'Startpage',
+                url: 'https://www.startpage.com/sp/search',
+                param: 'query'
+            },
+            searx: {
+                name: 'Searx',
+                url: 'https://searx.me/',
+                param: 'q'
+            },
+            qwant: {
+                name: 'Qwant',
+                url: 'https://www.qwant.com/',
+                param: 'q'
+            },
+            ecosia: {
+                name: 'Ecosia',
+                url: 'https://www.ecosia.org/search',
+                param: 'q'
+            }
+        };
 
         // API functions for storage
         async function loadFromAPI() {
@@ -1021,7 +1122,11 @@
                     const data = await response.json();
                     if (data.success) {
                         apps = data.data.apps || [];
-                        settings = data.data.settings || { title: 'Home' };
+                        settings = data.data.settings || { 
+                            title: 'Home',
+                            searchEngine: 'google',
+                            customSearchUrl: ''
+                        };
                         console.log('Data loaded from API');
                         return true;
                     }
@@ -1036,7 +1141,11 @@
                 { name: 'Pi-hole', url: 'http://192.168.1.100/admin', icon: '🛡️' },
                 { name: 'Portainer', url: 'http://localhost:9000', icon: '🐳' }
             ];
-            settings = { title: 'Home' };
+            settings = { 
+                title: 'Home',
+                searchEngine: 'google',
+                customSearchUrl: ''
+            };
             return false;
         }
 
@@ -1090,6 +1199,60 @@
                 console.error('Error saving settings to API:', error);
             }
             return false;
+        }
+
+        // Search engine functions
+        function updateSearchForm() {
+            const form = document.getElementById('searchForm');
+            const searchInput = form.querySelector('input[name="q"]');
+            
+            if (settings.searchEngine === 'custom' && settings.customSearchUrl) {
+                // Custom search engine
+                const customUrl = settings.customSearchUrl;
+                if (customUrl.includes('{query}')) {
+                    // Handle custom placeholder
+                    form.onsubmit = function(e) {
+                        e.preventDefault();
+                        const query = searchInput.value;
+                        const searchUrl = customUrl.replace('{query}', encodeURIComponent(query));
+                        window.location.href = searchUrl;
+                    };
+                } else {
+                    // Simple append
+                    form.action = customUrl;
+                    form.method = 'get';
+                    searchInput.name = 'q';
+                    form.onsubmit = null;
+                }
+            } else {
+                // Predefined search engine
+                const engine = searchEngines[settings.searchEngine] || searchEngines.google;
+                form.action = engine.url;
+                form.method = 'get';
+                searchInput.name = engine.param;
+                form.onsubmit = null;
+            }
+            
+            // Update placeholder
+            const engineName = settings.searchEngine === 'custom' ? 'Search' : searchEngines[settings.searchEngine]?.name || 'Google';
+            searchInput.placeholder = `Search with ${engineName}...`;
+        }
+
+        function updateSearchEnginePreview() {
+            const select = document.getElementById('searchEngine');
+            const preview = document.getElementById('searchEnginePreview');
+            const customGroup = document.getElementById('customSearchGroup');
+            
+            const selectedEngine = select.value;
+            
+            if (selectedEngine === 'custom') {
+                customGroup.style.display = 'block';
+                preview.textContent = 'Enter your custom search URL below';
+            } else {
+                customGroup.style.display = 'none';
+                const engine = searchEngines[selectedEngine];
+                preview.textContent = `Search URL: ${engine.url}?${engine.param}=`;
+            }
         }
 
         // Status bar functions
@@ -1510,6 +1673,20 @@
                 if (titleInput) {
                     titleInput.value = settings.title || 'Home';
                 }
+                
+                // Load search engine settings
+                const searchEngineSelect = document.getElementById('searchEngine');
+                if (searchEngineSelect) {
+                    searchEngineSelect.value = settings.searchEngine || 'google';
+                }
+                
+                const customUrlInput = document.getElementById('customSearchUrl');
+                if (customUrlInput) {
+                    customUrlInput.value = settings.customSearchUrl || '';
+                }
+                
+                updateSearchEnginePreview();
+                
                 modal.style.display = 'block';
                 console.log('Settings modal opened');
             } else {
@@ -1529,6 +1706,8 @@
         async function saveSettings() {
             console.log('Saving settings...');
             const titleInput = document.getElementById('settingsTitle');
+            const searchEngineSelect = document.getElementById('searchEngine');
+            const customUrlInput = document.getElementById('customSearchUrl');
             
             if (titleInput) {
                 const newTitle = titleInput.value.trim() || 'Home';
@@ -1536,10 +1715,15 @@
                 
                 // Update settings object
                 settings.title = newTitle;
+                settings.searchEngine = searchEngineSelect.value;
+                settings.customSearchUrl = customUrlInput.value;
                 
                 // Update the page display
                 document.querySelector('.logo').textContent = newTitle;
                 document.title = newTitle;
+                
+                // Update search form
+                updateSearchForm();
                 
                 // Save to API
                 const saved = await saveSettingsToAPI();
@@ -1569,6 +1753,9 @@
             if (titleInput) {
                 titleInput.value = savedTitle;
             }
+            
+            // Update search form with saved engine
+            updateSearchForm();
         }
 
         // Docker modal functions
