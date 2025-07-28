@@ -1681,6 +1681,14 @@ async function handleLogin(event) {
         function refreshStats() {
             getSystemStats();
         }
+	
+	function containerLogs(containerName) {
+    		window.open(`/api/docker.php?logs=${containerName}`, '_blank');
+	}
+
+	function refreshContainers() {
+    		getContainers();
+	}
 
         // Docker container management
         async function getContainers() {
