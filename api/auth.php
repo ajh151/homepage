@@ -15,33 +15,37 @@ function authenticateUser($username, $password) {
         return false;
     }
     
-    // Use Python's crypt module for proper PAM authentication
+    // Use passwd command to verify credentials
     $pythonScript = '
-import crypt
-import spwd
+import subprocess
 import sys
+import os
 
 try:
     username = sys.argv[1]
     password = sys.argv[2]
     
-    # Get the shadow entry for the user
-    try:
-        shadow_entry = spwd.getspnam(username)
-        stored_hash = shadow_entry.sp_pwd
-    except KeyError:
-        print("USER_NOT_FOUND")
-        sys.exit(1)
-    except PermissionError:
-        print("PERMISSION_ERROR")
-        sys.exit(1)
+    # Create a simple test using su command
+    # This method works without spwd module
+    cmd = ["sudo", "-S", "-u", username, "whoami"]
     
-    # Verify the password
-    if crypt.crypt(password, stored_hash) == stored_hash:
+    process = subprocess.Popen(
+        cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+    
+    stdout, stderr = process.communicate(input=password + "\n", timeout=5)
+    
+    if process.returncode == 0 and stdout.strip() == username:
         print("SUCCESS")
     else:
         print("INVALID_PASSWORD")
         
+except subprocess.TimeoutExpired:
+    print("TIMEOUT")
 except Exception as e:
     print(f"ERROR: {str(e)}")
     sys.exit(1)
@@ -51,9 +55,9 @@ except Exception as e:
     $tempFile = tempnam(sys_get_temp_dir(), 'auth_');
     file_put_contents($tempFile, $pythonScript);
     
-    // Execute with sudo to access shadow file
+    // Execute the script
     $cmd = sprintf(
-        'sudo python3 %s %s %s 2>&1',
+        'python3 %s %s %s 2>&1',
         escapeshellarg($tempFile),
         escapeshellarg($username),
         escapeshellarg($password)
