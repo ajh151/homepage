@@ -1,4 +1,5 @@
 <?php
+session_start();
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -6,6 +7,25 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
+}
+
+function isAuthenticated() {
+    return isset($_SESSION['authenticated']) && 
+           $_SESSION['authenticated'] === true && 
+           isset($_SESSION['username']) &&
+           time() < ($_SESSION['expires'] ?? 0);
+}
+
+function requireAuth() {
+    if (!isAuthenticated()) {
+        http_response_code(401);
+        echo json_encode([
+            'success' => false, 
+            'error' => 'Authentication required for this operation',
+            'requireAuth' => true
+        ]);
+        exit;
+    }
 }
 
 function getContainers() {
@@ -76,6 +96,12 @@ function getContainers() {
 }
 
 function executeDockerAction($container, $action) {
+    // Check if authentication is required for this action
+    $sensitiveActions = ['remove', 'purge'];
+    if (in_array($action, $sensitiveActions)) {
+        requireAuth();
+    }
+    
     $allowedActions = ['start', 'stop', 'restart', 'remove', 'purge'];
     
     if (!in_array($action, $allowedActions)) {
@@ -83,6 +109,11 @@ function executeDockerAction($container, $action) {
     }
     
     $container = preg_replace('/[^a-zA-Z0-9_-]/', '', $container);
+    
+    // Log the action for security
+    if (isAuthenticated()) {
+        error_log("Docker action: {$action} on container {$container} by user {$_SESSION['username']}");
+    }
     
     if ($action === 'remove') {
         $cmd = "sudo /snap/bin/docker rm -f $container 2>&1";
@@ -123,6 +154,12 @@ function executeDockerAction($container, $action) {
 }
 
 function deployContainer($data) {
+    // Require authentication for deploying containers
+    requireAuth();
+    
+    // Log the deployment for security
+    error_log("Docker deployment by user {$_SESSION['username']}: " . json_encode($data));
+    
     if ($data['method'] === 'simple') {
         $name = preg_replace('/[^a-zA-Z0-9_-]/', '', $data['name']);
         $image = $data['image'];
