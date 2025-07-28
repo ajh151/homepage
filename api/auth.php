@@ -15,18 +15,23 @@ function authenticateUser($username, $password) {
         return false;
     }
     
-    // Create a temporary script to avoid shell escaping issues
-    $script = "#!/bin/bash\necho " . escapeshellarg($password) . " | pamtester login " . escapeshellarg($username) . " authenticate >/dev/null 2>&1\necho \$?\n";
+    // Simple approach: use su command which is more universally available
+    $escapedPassword = escapeshellarg($password);
+    $escapedUsername = escapeshellarg($username);
+    
+    // Create a test script
+    $script = "#!/bin/bash\n";
+    $script .= "echo $escapedPassword | su -c 'whoami' $escapedUsername 2>/dev/null\n";
     
     $tempFile = tempnam(sys_get_temp_dir(), 'auth_');
     file_put_contents($tempFile, $script);
     chmod($tempFile, 0755);
     
-    // Execute the script
-    $exitCode = trim(shell_exec($tempFile));
+    $output = trim(shell_exec($tempFile));
     unlink($tempFile);
     
-    return $exitCode === '0';
+    // Check if the output matches the username
+    return $output === $username;
 }
 
 function isAuthenticated() {
