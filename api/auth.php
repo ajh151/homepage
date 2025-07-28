@@ -15,58 +15,19 @@ function authenticateUser($username, $password) {
         return false;
     }
     
-    // Use passwd command to verify credentials
-    $pythonScript = '
-import subprocess
-import sys
-import os
-
-try:
-    username = sys.argv[1]
-    password = sys.argv[2]
+    // Escape shell arguments to prevent injection
+    $username = escapeshellarg($username);
+    $password = escapeshellarg($password);
     
-    # Create a simple test using su command
-    # This method works without spwd module
-    cmd = ["sudo", "-S", "-u", username, "whoami"]
+    // Use pamtester for authentication
+    $cmd = "echo $password | pamtester login $username authenticate 2>/dev/null";
     
-    process = subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
+    // Execute command and capture exit code
+    $output = shell_exec($cmd);
+    $exitCode = shell_exec("echo $password | pamtester login $username authenticate >/dev/null 2>&1; echo \$?");
     
-    stdout, stderr = process.communicate(input=password + "\n", timeout=5)
-    
-    if process.returncode == 0 and stdout.strip() == username:
-        print("SUCCESS")
-    else:
-        print("INVALID_PASSWORD")
-        
-except subprocess.TimeoutExpired:
-    print("TIMEOUT")
-except Exception as e:
-    print(f"ERROR: {str(e)}")
-    sys.exit(1)
-';
-    
-    // Write Python script to temporary file
-    $tempFile = tempnam(sys_get_temp_dir(), 'auth_');
-    file_put_contents($tempFile, $pythonScript);
-    
-    // Execute the script
-    $cmd = sprintf(
-        'python3 %s %s %s 2>&1',
-        escapeshellarg($tempFile),
-        escapeshellarg($username),
-        escapeshellarg($password)
-    );
-    
-    $output = trim(shell_exec($cmd));
-    unlink($tempFile);
-    
-    return $output === 'SUCCESS';
+    // Return true if authentication succeeded (exit code 0)
+    return trim($exitCode) === '0';
 }
 
 function isAuthenticated() {
