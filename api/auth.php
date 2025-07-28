@@ -15,19 +15,18 @@ function authenticateUser($username, $password) {
         return false;
     }
     
-    // Escape shell arguments to prevent injection
-    $username = escapeshellarg($username);
-    $password = escapeshellarg($password);
+    // Create a temporary script to avoid shell escaping issues
+    $script = "#!/bin/bash\necho " . escapeshellarg($password) . " | pamtester login " . escapeshellarg($username) . " authenticate >/dev/null 2>&1\necho \$?\n";
     
-    // Use pamtester for authentication
-    $cmd = "echo $password | pamtester login $username authenticate 2>/dev/null";
+    $tempFile = tempnam(sys_get_temp_dir(), 'auth_');
+    file_put_contents($tempFile, $script);
+    chmod($tempFile, 0755);
     
-    // Execute command and capture exit code
-    $output = shell_exec($cmd);
-    $exitCode = shell_exec("echo $password | pamtester login $username authenticate >/dev/null 2>&1; echo \$?");
+    // Execute the script
+    $exitCode = trim(shell_exec($tempFile));
+    unlink($tempFile);
     
-    // Return true if authentication succeeded (exit code 0)
-    return trim($exitCode) === '0';
+    return $exitCode === '0';
 }
 
 function isAuthenticated() {
