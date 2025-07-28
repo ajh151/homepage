@@ -1691,74 +1691,80 @@ async function handleLogin(event) {
 	}
 
         // Docker container management
-        async function getContainers() {
-            try {
-                const response = await fetch('/api/docker.php');
-                if (response.ok) {
-                    const containers = await response.json();
-                    updateContainerDisplay(containers);
-                } else {
-                    document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Docker API not available</div>';
-                }
-            } catch (error) {
-                document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Error loading containers</div>';
-            }
+async function getContainers(fast = false) {
+    try {
+        // Show loading immediately if this is the first load
+        if (fast) {
+            document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">🔄 Loading containers...</div>';
         }
+        
+        const url = fast ? '/api/docker.php?fast=true' : '/api/docker.php';
+        const response = await fetch(url);
+        if (response.ok) {
+            const containers = await response.json();
+            updateContainerDisplay(containers, fast);
+        } else {
+            document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Docker API not available</div>';
+        }
+    } catch (error) {
+        document.getElementById('containerGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">Error loading containers</div>';
+    }
+}
 
-        function updateContainerDisplay(containers) {
-            const grid = document.getElementById('containerGrid');
-            
-            if (!containers || containers.length === 0) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">No containers found</div>';
-                return;
-            }
+function updateContainerDisplay(containers, isInitialLoad = false) {
+    const grid = document.getElementById('containerGrid');
+    
+    if (!containers || containers.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;">No containers found</div>';
+        return;
+    }
 
-            grid.innerHTML = containers.map(container => `
-                <div class="container-card">
-                    <div class="container-header">
-                        <div class="container-info">
-                            <div class="container-name">${container.name}</div>
-                            <div class="container-image">${container.image}</div>
-                        </div>
-                        <div class="container-status">
-                            <div class="status-dot ${container.status}"></div>
-                            <div class="container-status-text">${container.status}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="container-details">
-                        <div class="container-detail">
-                            <div class="detail-label">Ports</div>
-                            <div class="detail-value">${container.ports || 'None'}</div>
-                        </div>
-                        <div class="container-detail">
-                            <div class="detail-label">Uptime</div>
-                            <div class="detail-value">${container.uptime || '0s'}</div>
-                        </div>
-                        <div class="container-detail">
-                            <div class="detail-label">CPU</div>
-                            <div class="detail-value">${container.cpu || '0%'}</div>
-                        </div>
-                        <div class="container-detail">
-                            <div class="detail-label">Memory</div>
-                            <div class="detail-value">${container.memory || '0MB'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="container-actions">
-                        ${container.status === 'running' ? `
-                            <button class="action-btn stop" onclick="containerAction('${container.name}', 'stop')">Stop</button>
-                            <button class="action-btn restart" onclick="containerAction('${container.name}', 'restart')">Restart</button>
-                        ` : `
-                            <button class="action-btn start" onclick="containerAction('${container.name}', 'start')">Start</button>
-                        `}
-                        <button class="action-btn" onclick="containerLogs('${container.name}')">Logs</button>
-                        <button class="action-btn stop" onclick="removeContainer('${container.name}', false)">Remove</button>
-                        <button class="action-btn purge" onclick="removeContainer('${container.name}', true)">Purge</button>
-                    </div>
+    grid.innerHTML = containers.map(container => `
+        <div class="container-card">
+            <div class="container-header">
+                <div class="container-info">
+                    <div class="container-name">${container.name}</div>
+                    <div class="container-image">${container.image}</div>
                 </div>
-            `).join('');
-        }
+                <div class="container-status">
+                    <div class="status-dot ${container.status}"></div>
+                    <div class="container-status-text">${container.status}</div>
+                </div>
+            </div>
+            
+            <div class="container-details">
+                <div class="container-detail">
+                    <div class="detail-label">Ports</div>
+                    <div class="detail-value">${container.ports || 'None'}</div>
+                </div>
+                <div class="container-detail">
+                    <div class="detail-label">Uptime</div>
+                    <div class="detail-value">${container.uptime || '0s'}</div>
+                </div>
+                <div class="container-detail">
+                    <div class="detail-label">CPU</div>
+                    <div class="detail-value">${isInitialLoad && container.status === 'running' ? '⏳ Loading...' : (container.cpu || '0%')}</div>
+                </div>
+                <div class="container-detail">
+                    <div class="detail-label">Memory</div>
+                    <div class="detail-value">${isInitialLoad && container.status === 'running' ? '⏳ Loading...' : (container.memory || '0MB')}</div>
+                </div>
+            </div>
+            
+            <div class="container-actions">
+                ${container.status === 'running' ? `
+                    <button class="action-btn stop" onclick="containerAction('${container.name}', 'stop')">Stop</button>
+                    <button class="action-btn restart" onclick="containerAction('${container.name}', 'restart')">Restart</button>
+                ` : `
+                    <button class="action-btn start" onclick="containerAction('${container.name}', 'start')">Start</button>
+                `}
+                <button class="action-btn" onclick="containerLogs('${container.name}')">Logs</button>
+                <button class="action-btn stop" onclick="removeContainer('${container.name}', false)">Remove</button>
+                <button class="action-btn purge" onclick="removeContainer('${container.name}', true)">Purge</button>
+            </div>
+        </div>
+    `).join('');
+}
 
         // Container action functions
        async function containerAction(containerName, action) {
@@ -2146,10 +2152,13 @@ document.getElementById('loginModal').addEventListener('click', function(e) {
             console.log('Settings loaded');
         });
         
-        // Load containers and stats with a small delay
+        // INSTANT container loading with placeholders
+        getContainers(true);
+
+        // Load full stats in background
         setTimeout(() => {
             getSystemStats();
-            getContainers();
+            getContainers(false); // This will update the "Loading..." with real stats
         }, 100);
         
         // Auto-refresh
