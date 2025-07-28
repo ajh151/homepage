@@ -28,7 +28,7 @@ function requireAuth() {
     }
 }
 
-function getContainers() {
+function getContainers($includeStats = true) {
     $cmd = "sudo /snap/bin/docker ps -a --format 'json' 2>&1";
     $output = shell_exec($cmd);
     
@@ -60,12 +60,13 @@ function getContainers() {
                 $uptime = preg_replace('/\s+\(.*?\)$/', '', $uptime); // Remove health status
             }
             
-            // Get CPU and Memory stats for running containers
+            // Initialize CPU and Memory stats
             $cpu = '0%';
             $memory = '0MB';
             
-            if ($isRunning) {
-                $statsCmd = "sudo /snap/bin/docker stats --no-stream --format 'json' $name 2>/dev/null";
+            // Only get CPU/Memory stats if requested and container is running
+            if ($includeStats && $isRunning) {
+                $statsCmd = "timeout 2 sudo /snap/bin/docker stats --no-stream --format 'json' $name 2>/dev/null";
                 $statsOutput = shell_exec($statsCmd);
                 if ($statsOutput) {
                     $statsData = json_decode(trim($statsOutput), true);
@@ -227,7 +228,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo $logs;
         exit;
     } else {
-        echo json_encode(getContainers());
+        // Check if stats should be included (default: yes, fast: no)
+        $includeStats = !isset($_GET['fast']) || $_GET['fast'] !== 'true';
+        echo json_encode(getContainers($includeStats));
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
