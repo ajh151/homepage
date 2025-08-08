@@ -1,0 +1,7 @@
+
+# Git metadata
+.git/*
+COMMIT_EDITMSG
+FETCH_HEAD
+ORIG_HEAD
+packed-refs

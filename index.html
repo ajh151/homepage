@@ -858,6 +858,51 @@
         </div>
     </div>
 
+<!-- Network Monitoring Section -->
+        <div class="apps-section">
+            <div class="apps-header">
+                <h2 class="apps-title">Network Monitoring</h2>
+                <button class="add-btn" onclick="refreshNetwork()">Refresh</button>
+            </div>
+            
+            <!-- Internet Speed -->
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: var(--text-primary);">Internet Speed</h3>
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));">
+                    <div class="stat-card">
+                        <div class="stat-icon">🌐</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Download</div>
+                            <div class="stat-value" id="downloadSpeed">-- Mbps</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Ping</div>
+                            <div class="stat-value" id="pingTime">-- ms</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Service Status -->
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: var(--text-primary);">Service Status</h3>
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));" id="serviceGrid">
+                    <!-- Services will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Network Devices -->
+            <div>
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: var(--text-primary);">Network Devices</h3>
+                <div class="container-grid" id="deviceGrid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+                    <!-- Devices will be loaded here -->
+                </div>
+            </div>
+        </div>
+
     <!-- Add App Modal -->
     <div class="modal" id="addModal">
         <div class="modal-content">
