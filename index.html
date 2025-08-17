@@ -238,6 +238,88 @@
             gap: 16px;
         }
 
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.tab-button {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 16px 24px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tab-button:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.tab-button.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+.tab-icon {
+    font-size: 16px;
+}
+
+/* Tab Content */
+.tab-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 30px;
+    min-height: 600px;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+/* Overview Grid Layout */
+.overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    height: 100%;
+}
+
+@media (max-width: 768px) {
+    .overview-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tab-button .tab-text {
+        display: none;
+    }
+    
+    .tab-button {
+        padding: 12px 16px;
+        font-size: 12px;
+    }
+}
+
 	.stat-card.storage-overview {
     grid-column: 1 / -1; /* Take full width */
     max-width: none;
@@ -875,85 +957,200 @@
             </form>
         </div>
 
-        <!-- Apps Section -->
-        <div class="apps-section">
-            <div class="apps-header">
-                <h2 class="apps-title">Apps</h2>
-                <button class="add-btn" onclick="openModal()">Add</button>
-            </div>
-            <div class="apps-grid" id="appsGrid">
-                <!-- Apps will be loaded here -->
-            </div>
+    <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="switchTab('overview')">
+                <span class="tab-icon">🏠</span>
+                <span class="tab-text">Overview</span>
+            </button>
+            <button class="tab-button" onclick="switchTab('system')">
+                <span class="tab-icon">⚙️</span>
+                <span class="tab-text">System</span>
+            </button>
+            <button class="tab-button" onclick="switchTab('docker')">
+                <span class="tab-icon">🐳</span>
+                <span class="tab-text">Docker</span>
+            </button>
+            <button class="tab-button" onclick="switchTab('network')">
+                <span class="tab-icon">🌐</span>
+                <span class="tab-text">Network</span>
+            </button>
+            <button class="tab-button" onclick="switchTab('apps')">
+                <span class="tab-icon">📱</span>
+                <span class="tab-text">Apps</span>
+            </button>
         </div>
 
-        <!-- System Monitoring Section -->
-        <div class="apps-section">
-            <div class="apps-header">
-                <h2 class="apps-title">System Status</h2>
-                <button class="add-btn" onclick="refreshStats()">Refresh</button>
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Overview Tab -->
+            <div class="tab-panel active" id="overview-panel">
+                <div class="overview-grid">
+                    <!-- Left Column: System Stats -->
+                    <div>
+                        <div class="apps-header">
+                            <h3 class="apps-title">System Overview</h3>
+                            <button class="add-btn" onclick="refreshStats()">Refresh</button>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">🌡️</div>
+                                <div class="stat-info">
+                                    <div class="stat-label">CPU Temp</div>
+                                    <div class="stat-value" id="cpuTemp">--°C</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">🛡️</div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Fail2ban</div>
+                                    <div class="stat-value" id="fail2banCount">-- attempts</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">💻</div>
+                                <div class="stat-info">
+                                    <div class="stat-label">CPU Usage</div>
+                                    <div class="stat-value" id="cpuUsage">--%</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">💾</div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Memory</div>
+                                    <div class="stat-value" id="memUsage">--%</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">⏱️</div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Uptime</div>
+                                    <div class="stat-value" id="uptime">-- days</div>
+                                </div>
+                            </div>
+                            <div class="stat-card storage-overview">
+                                <div class="stat-icon">💿</div>
+                                <div class="stat-info" style="width: 100%;">
+                                    <div class="stat-label">Storage Overview</div>
+                                    <div class="stat-value" id="diskUsage">--%</div>
+                                    <div id="diskDetails" style="margin-top: 12px;">
+                                        <!-- Detailed disk info will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Quick Access -->
+                    <div>
+                        <div class="apps-header">
+                            <h3 class="apps-title">Quick Access</h3>
+                            <button class="add-btn" onclick="openModal()">Add</button>
+                        </div>
+                        <div class="apps-grid" id="appsGrid">
+                            <!-- Apps will be loaded here -->
+                        </div>
+
+                        <div class="apps-header" style="margin-top: 30px;">
+                            <h3 class="apps-title">Running Containers</h3>
+                            <button class="add-btn" onclick="refreshContainers()">Refresh</button>
+                        </div>
+                        <div id="containerGridOverview" style="display: grid; grid-template-columns: 1fr; gap: 12px; max-height: 300px; overflow-y: auto;">
+                            <!-- Container summary will be loaded here -->
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">🌡️</div>
-                    <div class="stat-info">
-                        <div class="stat-label">CPU Temp</div>
-                        <div class="stat-value" id="cpuTemp">--°C</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🛡️</div>
-                    <div class="stat-info">
-                        <div class="stat-label">Fail2ban</div>
-                        <div class="stat-value" id="fail2banCount">-- attempts</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">💻</div>
-                    <div class="stat-info">
-                        <div class="stat-label">CPU Usage</div>
-                        <div class="stat-value" id="cpuUsage">--%</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">💾</div>
-                    <div class="stat-info">
-                        <div class="stat-label">Memory</div>
-                        <div class="stat-value" id="memUsage">--%</div>
-                    </div>
+
+            <!-- System Tab -->
+            <div class="tab-panel" id="system-panel">
+                <div class="apps-header">
+                    <h2 class="apps-title">Detailed System Status</h2>
+                    <button class="add-btn" onclick="refreshStats()">Refresh</button>
                 </div>
 
-<div class="stat-card">
-    <div class="stat-icon">⏱️</div>
-    <div class="stat-info">
-        <div class="stat-label">Uptime</div>
-        <div class="stat-value" id="uptime">-- days</div>
-    </div>
-</div>
-<div class="stat-card storage-overview">
-    <div class="stat-icon">💿</div>
-    <div class="stat-info" style="width: 100%;">
-        <div class="stat-label">Storage Overview</div>
-        <div class="stat-value" id="diskUsage">--%</div>
-        <div id="diskDetails" style="margin-top: 12px;">
-            <!-- Detailed disk info will be populated here -->
-        </div>
-    </div>
-</div>
-
-</div>
-</div>
-
-        <!-- Docker Containers Section -->
-        <div class="apps-section">
-            <div class="apps-header">
-                <h2 class="apps-title">Docker Containers</h2>
-                <div style="display: flex; gap: 8px;">
-                    <button class="add-btn" onclick="openDockerModal()">Add Container</button>
-                    <button class="add-btn" onclick="refreshContainers()">Refresh</button>
+                 <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🌡️</div>
+                        <div class="stat-info">
+                            <div class="stat-label">CPU Temp</div>
+                            <div class="stat-value" id="cpuTempDetailed">--°C</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🛡️</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Fail2ban</div>
+                            <div class="stat-value" id="fail2banCountDetailed">-- attempts</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💻</div>
+                        <div class="stat-info">
+                            <div class="stat-label">CPU Usage</div>
+                            <div class="stat-value" id="cpuUsageDetailed">--%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💾</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Memory</div>
+                            <div class="stat-value" id="memUsageDetailed">--%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Uptime</div>
+                            <div class="stat-value" id="uptimeDetailed">-- days</div>
+                        </div>
+                    </div>
+                    <div class="stat-card storage-overview">
+                        <div class="stat-icon">💿</div>
+                        <div class="stat-info" style="width: 100%;">
+                            <div class="stat-label">Storage Overview</div>
+                            <div class="stat-value" id="diskUsageDetailed">--%</div>
+                            <div id="diskDetailsDetailed" style="margin-top: 12px;">
+                                <!-- Detailed disk info will be populated here -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="container-grid" id="containerGrid">
-                <!-- Containers will be loaded here -->
+
+            <!-- Docker Tab -->
+            <div class="tab-panel" id="docker-panel">
+                <div class="apps-header">
+                    <h2 class="apps-title">Docker Containers</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="add-btn" onclick="openDockerModal()">Add Container</button>
+                        <button class="add-btn" onclick="refreshContainers()">Refresh</button>
+                    </div>
+                </div>
+
+                <div class="container-grid" id="containerGrid">
+                    <!-- Containers will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Network Tab -->
+            <div class="tab-panel" id="network-panel">
+                <div class="apps-header">
+                    <h2 class="apps-title">Network Monitoring</h2>
+                    <button class="add-btn" onclick="refreshNetwork()">Refresh</button>
+                </div>
+                <p style="color: var(--text-secondary);">Network monitoring features coming soon...</p>
+            </div>
+
+            <!-- Apps Tab -->
+            <div class="tab-panel" id="apps-panel">
+                <div class="apps-header">
+                    <h2 class="apps-title">All Applications</h2>
+                    <button class="add-btn" onclick="openModal()">Add</button>
+                </div>
+                <div class="apps-grid" id="appsGridFull">
+                    <!-- Full apps grid will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
@@ -2283,6 +2480,166 @@ document.getElementById('loginModal').addEventListener('click', function(e) {
             }
         });
 
+// Tab switching functionality
+        function switchTab(tabName) {
+            // Remove active class from all buttons and panels
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            
+            // Add active class to clicked button and corresponding panel
+            event.target.closest('.tab-button').classList.add('active');
+            document.getElementById(tabName + '-panel').classList.add('active');
+            
+            // Load specific content when tabs are opened
+            if (tabName === 'docker') {
+                getContainers(true);
+            } else if (tabName === 'apps') {
+                renderAppsInTab('appsGridFull');
+            } else if (tabName === 'system') {
+                updateStatsDisplayDetailed();
+            } else if (tabName === 'overview') {
+                loadOverviewData();
+            }
+        }
+
+        // Load overview data
+        function loadOverviewData() {
+            getSystemStats();
+            renderAppsInTab('appsGrid');
+            loadContainerSummary();
+        }
+
+        // Render apps in specific grid
+        function renderAppsInTab(gridId) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            apps.forEach((app, index) => {
+                const appElement = document.createElement('a');
+                appElement.className = 'app-item';
+                appElement.href = app.url;
+                appElement.target = '_blank';
+                
+                // Add drag and drop only for full apps tab
+                if (gridId === 'appsGridFull') {
+                    appElement.draggable = true;
+                    appElement.dataset.index = index;
+                    appElement.innerHTML = `
+                        <div class="app-icon">${app.icon || app.name.charAt(0).toUpperCase()}</div>
+                        <div class="app-name">${app.name}</div>
+                        <button class="delete-btn" onclick="deleteApp(event, ${index})" title="Delete">×</button>
+                    `;
+                    
+                    // Add drag event listeners
+                    appElement.addEventListener('dragstart', handleDragStart);
+                    appElement.addEventListener('dragover', handleDragOver);
+                    appElement.addEventListener('dragenter', handleDragEnter);
+                    appElement.addEventListener('dragleave', handleDragLeave);
+                    appElement.addEventListener('drop', handleDrop);
+                    appElement.addEventListener('dragend', handleDragEnd);
+                } else {
+                    // Simple version for overview
+                    appElement.innerHTML = `
+                        <div class="app-icon">${app.icon || app.name.charAt(0).toUpperCase()}</div>
+                        <div class="app-name">${app.name}</div>
+                    `;
+                }
+                
+                grid.appendChild(appElement);
+            });
+        }
+
+        // Load container summary for overview
+        function loadContainerSummary() {
+            fetch('/api/docker.php?fast=true')
+                .then(response => response.json())
+                .then(containers => {
+                    const summaryGrid = document.getElementById('containerGridOverview');
+                    if (!summaryGrid || !containers) return;
+                    
+                    // Show only running containers in overview
+                    const runningContainers = containers.filter(c => c.status === 'running').slice(0, 4);
+                    
+                    summaryGrid.innerHTML = runningContainers.map(container => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px;">
+                            <div>
+                                <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">${container.name}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">${container.image}</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
+                                <span style="font-size: 12px; color: var(--text-secondary);">Running</span>
+                            </div>
+                        </div>
+                    `).join('');
+                })
+                .catch(error => console.log('Container summary not available'));
+        }
+
+        // Update detailed stats (for system tab)
+        function updateStatsDisplayDetailed() {
+            fetch('/api/stats.php')
+                .then(response => response.json())
+                .then(stats => {
+                    // Update detailed stats
+                    document.getElementById('cpuTempDetailed').textContent = `${stats.cpuTemp}°C`;
+                    document.getElementById('fail2banCountDetailed').textContent = `${stats.fail2banCount} today`;
+                    document.getElementById('cpuUsageDetailed').textContent = `${stats.cpuUsage}%`;
+                    document.getElementById('memUsageDetailed').textContent = `${stats.memUsage}%`;
+                    document.getElementById('diskUsageDetailed').textContent = `${stats.diskUsage}%`;
+                    document.getElementById('uptimeDetailed').textContent = `${stats.uptime} days`;
+                    
+                    // Update detailed disk information
+                    updateDiskDetailsDetailed(stats.detailedDisks || []);
+                })
+                .catch(error => console.log('Stats not available for detailed view'));
+        }
+
+        // Update detailed disk details
+        function updateDiskDetailsDetailed(disks) {
+            const diskDetails = document.getElementById('diskDetailsDetailed');
+            if (!diskDetails || !disks.length) return;
+            
+            const typeIcons = {
+                'system': '🖥️',
+                'usb': '🔌',
+                'removable': '💾',
+                'sd_card': '💳',
+                'disk': '💿'
+            };
+            
+            diskDetails.innerHTML = disks.map(disk => {
+                const icon = typeIcons[disk.type] || '💿';
+                const progressClass = disk.percentage > 90 ? 'danger' : disk.percentage > 75 ? 'warning' : '';
+                
+                return `
+                    <div class="disk-detail-item ${disk.type}">
+                        <div class="disk-info">
+                            <div class="disk-name">
+                                <span class="disk-type-icon">${icon}</span>
+                                ${disk.mount === '/' ? 'System' : (disk.mount.split('/').pop() || disk.device)}
+                            </div>
+                            <div class="disk-mount">${disk.mount} ${disk.filesystem ? `(${disk.filesystem})` : ''}</div>
+                        </div>
+                        <div class="disk-usage">
+                            <div class="disk-percentage">${disk.percentage}%</div>
+                            <div class="disk-space">${disk.used} / ${disk.total}</div>
+                            <div class="disk-progress">
+                                <div class="disk-progress-bar ${progressClass}" style="width: ${disk.percentage}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Network refresh placeholder
+        function refreshNetwork() {
+            console.log('Network refresh - to be implemented');
+            // You can implement your network.php API call here later
+        }
+
         // Initialize everything
         console.log('Initializing page...');
         initTheme();
@@ -2291,6 +2648,7 @@ document.getElementById('loginModal').addEventListener('click', function(e) {
         // Load data from API
         loadApps().then(() => {
             console.log('Apps loaded');
+            loadOverviewData(); // Load overview tab data
         });
         
         loadSavedSettings().then(() => {
