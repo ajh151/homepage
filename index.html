@@ -2626,13 +2626,56 @@ function switchTab(tabName) {
 function loadOverviewData() {
     getSystemStats();
     renderAppsInTab('appsGrid');
-    loadContainerSummary();
+    loadContainerSummaryFast(); // <-- Use fast version
     
     // Initialize drag and drop for overview sections with a longer delay
     setTimeout(() => {
         console.log('Initializing overview drag and drop...');
         initOverviewDragAndDrop();
     }, 500);
+}
+
+function loadContainerSummaryFast() {
+    const summaryGrid = document.getElementById('containerGridOverview');
+    if (!summaryGrid) return;
+    
+    // Show loading state immediately
+    summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">🔄 Loading containers...</div>';
+    
+    // Use fast API endpoint
+    fetch('/api/docker.php?fast=true')
+        .then(response => response.json())
+        .then(containers => {
+            if (!containers || containers.length === 0) {
+                summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">No containers found</div>';
+                return;
+            }
+            
+            // Show only running containers in overview, limit to 4
+            const runningContainers = containers.filter(c => c.status === 'running').slice(0, 4);
+            
+            if (runningContainers.length === 0) {
+                summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">No running containers</div>';
+                return;
+            }
+            
+            summaryGrid.innerHTML = runningContainers.map(container => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px;">
+                    <div>
+                        <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">${container.name}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">${container.image}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Running</span>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(error => {
+            console.log('Container summary not available:', error);
+            summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">❌ Error loading containers</div>';
+        });
 }
 
         // Render apps in specific grid
