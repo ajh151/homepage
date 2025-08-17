@@ -62,6 +62,15 @@ switch ($method) {
             echo json_encode(['success' => true, 'data' => getSettings()]);
         } elseif ($type === 'apps') {
             echo json_encode(['success' => true, 'data' => getApps()]);
+        } elseif ($type === 'overview_order') {
+            $orderFile = $dataDir . '/overview_order.json';
+            if (file_exists($orderFile)) {
+                $data = file_get_contents($orderFile);
+                $order = json_decode($data, true) ?: ['system', 'apps', 'containers', 'network'];
+            } else {
+                $order = ['system', 'apps', 'containers', 'network'];
+            }
+            echo json_encode(['success' => true, 'data' => $order]);
         } else {
             echo json_encode([
                 'success' => true, 
@@ -82,6 +91,10 @@ switch ($method) {
             echo json_encode(['success' => $success !== false]);
         } elseif ($type === 'apps' && $data) {
             $success = saveApps($data);
+            echo json_encode(['success' => $success !== false]);
+        } elseif ($type === 'overview_order' && $data) {
+            $orderFile = $dataDir . '/overview_order.json';
+            $success = file_put_contents($orderFile, json_encode($data, JSON_PRETTY_PRINT));
             echo json_encode(['success' => $success !== false]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid request']);
