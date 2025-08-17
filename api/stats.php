@@ -41,6 +41,71 @@ function getDiskUsage() {
     return (int)trim($output);
 }
 
+function getDetailedDiskUsage() {
+    // Get main filesystem usage
+    $cmd = "df -h / | awk 'NR==2{printf \"%s,%s,%s,%s\", $2, $3, $4, $5}'";
+    $output = trim(shell_exec($cmd));
+    $parts = explode(',', $output);
+    
+    $mainDisk = [
+        'mount' => '/',
+        'total' => $parts[0] ?? '0',
+        'used' => $parts[1] ?? '0',
+        'available' => $parts[2] ?? '0',
+        'percentage' => (int)str_replace('%', '', $parts[3] ?? '0'),
+        'type' => 'system'
+    ];
+    
+    // Get all mounted filesystems (including USB devices)
+    $cmd = "df -h --output=source,target,size,used,avail,pcent,fstype | grep -E '^/dev/' | grep -v '^/dev/loop'";
+    $output = shell_exec($cmd);
+    
+    $disks = [$mainDisk];
+    
+    if ($output) {
+        $lines = explode("\n", trim($output));
+        foreach ($lines as $line) {
+            if (trim($line) === '') continue;
+            
+            $parts = preg_split('/\s+/', trim($line));
+            if (count($parts) >= 6) {
+                $device = $parts[0];
+                $mount = $parts[1];
+                $total = $parts[2];
+                $used = $parts[3];
+                $avail = $parts[4];
+                $percent = (int)str_replace('%', '', $parts[5]);
+                $fstype = $parts[6] ?? 'unknown';
+                
+                // Skip if it's the root filesystem (already added)
+                if ($mount === '/') continue;
+                
+                // Determine device type
+                $type = 'disk';
+                if (strpos($device, '/dev/sd') === 0 && $mount !== '/') {
+                    $type = 'usb';
+                } elseif (strpos($device, '/dev/mmcblk') === 0) {
+                    $type = 'sd_card';
+                } elseif (strpos($mount, '/media/') === 0 || strpos($mount, '/mnt/') === 0) {
+                    $type = 'removable';
+                }
+                
+                $disks[] = [
+                    'device' => $device,
+                    'mount' => $mount,
+                    'total' => $total,
+                    'used' => $used,
+                    'available' => $avail,
+                    'percentage' => $percent,
+                    'type' => $type,
+                    'filesystem' => $fstype
+                ];
+            }
+        }
+    }
+    
+    return $disks;
+}
 function getUptime() {
     $cmd = "uptime -s";
     $bootTime = shell_exec($cmd);
@@ -55,7 +120,8 @@ $stats = [
     'cpuUsage' => getCpuUsage(),
     'memUsage' => getMemoryUsage(),
     'diskUsage' => getDiskUsage(),
-    'uptime' => getUptime()
+    'uptime' => getUptime(),
+    'detailedDisks' => getDetailedDiskUsage()
 ];
 
 echo json_encode($stats);

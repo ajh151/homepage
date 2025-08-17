@@ -269,12 +269,98 @@
             margin-bottom: 4px;
         }
 
-        .stat-value {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-            word-break: break-word;
-        }
+.stat-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.disk-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 4px 0;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-color);
+}
+
+.disk-detail-item.usb {
+    border-left-color: #10b981;
+}
+
+.disk-detail-item.removable {
+    border-left-color: #f59e0b;
+}
+
+.disk-detail-item.sd_card {
+    border-left-color: #8b5cf6;
+}
+
+.disk-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.disk-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.disk-mount {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.disk-usage {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.disk-percentage {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.disk-space {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.disk-progress {
+    width: 60px;
+    height: 4px;
+    background: var(--bg-primary);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.disk-progress-bar {
+    height: 100%;
+    background: var(--accent-color);
+    transition: width 0.3s ease;
+}
+
+.disk-progress-bar.warning {
+    background: #f59e0b;
+}
+
+.disk-progress-bar.danger {
+    background: #ef4444;
+}
+
+.disk-type-icon {
+    margin-right: 6px;
+    font-size: 14px;
+}
 
         .status-good { color: #10b981; }
         .status-warning { color: #f59e0b; }
@@ -826,22 +912,26 @@
                         <div class="stat-value" id="memUsage">--%</div>
                     </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon">💿</div>
-                    <div class="stat-info">
-                        <div class="stat-label">Disk Usage</div>
-                        <div class="stat-value" id="diskUsage">--%</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">⏱️</div>
-                    <div class="stat-info">
-                        <div class="stat-label">Uptime</div>
-                        <div class="stat-value" id="uptime">-- days</div>
-                    </div>
-                </div>
-            </div>
+<div class="stat-card" style="grid-column: span 2;">
+    <div class="stat-icon">💿</div>
+    <div class="stat-info" style="width: 100%;">
+        <div class="stat-label">Storage Overview</div>
+        <div class="stat-value" id="diskUsage">--%</div>
+        <div id="diskDetails" style="margin-top: 12px;">
+            <!-- Detailed disk info will be populated here -->
         </div>
+    </div>
+</div>
+<div class="stat-card">
+    <div class="stat-icon">⏱️</div>
+    <div class="stat-info">
+        <div class="stat-label">Uptime</div>
+        <div class="stat-value" id="uptime">-- days</div>
+    </div>
+</div>
+            </div>
+
+            </div>
 
         <!-- Docker Containers Section -->
         <div class="apps-section">
@@ -1670,14 +1760,58 @@ async function handleLogin(event) {
             }
         }
 
-        function updateStatsDisplay(stats) {
-            document.getElementById('cpuTemp').textContent = `${stats.cpuTemp}°C`;
-            document.getElementById('fail2banCount').textContent = `${stats.fail2banCount} today`;
-            document.getElementById('cpuUsage').textContent = `${stats.cpuUsage}%`;
-            document.getElementById('memUsage').textContent = `${stats.memUsage}%`;
-            document.getElementById('diskUsage').textContent = `${stats.diskUsage}%`;
-            document.getElementById('uptime').textContent = `${stats.uptime} days`;
-        }
+function updateStatsDisplay(stats) {
+    document.getElementById('cpuTemp').textContent = `${stats.cpuTemp}°C`;
+    document.getElementById('fail2banCount').textContent = `${stats.fail2banCount} today`;
+    document.getElementById('cpuUsage').textContent = `${stats.cpuUsage}%`;
+    document.getElementById('memUsage').textContent = `${stats.memUsage}%`;
+    document.getElementById('diskUsage').textContent = `${stats.diskUsage}%`;
+    document.getElementById('uptime').textContent = `${stats.uptime} days`;
+    
+    // Update detailed disk information
+    updateDiskDetails(stats.detailedDisks || []);
+}
+
+function updateDiskDetails(disks) {
+    const diskDetails = document.getElementById('diskDetails');
+    if (!diskDetails || !disks.length) return;
+    
+    const typeIcons = {
+        'system': '🖥️',
+        'usb': '🔌',
+        'removable': '💾',
+        'sd_card': '💳',
+        'disk': '💿'
+    };
+    
+    diskDetails.innerHTML = disks.map(disk => {
+        const icon = typeIcons[disk.type] || '💿';
+        const progressClass = disk.percentage > 90 ? 'danger' : disk.percentage > 75 ? 'warning' : '';
+        
+        return `
+            <div class="disk-detail-item ${disk.type}">
+                <div class="disk-info">
+                    <div class="disk-name">
+                        <span class="disk-type-icon">${icon}</span>
+                        ${disk.mount === '/' ? 'System' : (disk.mount.split('/').pop() || disk.device)}
+                    </div>
+                    <div class="disk-mount">${disk.mount} ${disk.filesystem ? `(${disk.filesystem})` : ''}</div>
+                </div>
+                <div class="disk-usage">
+                    <div class="disk-percentage">${disk.percentage}%</div>
+                    <div class="disk-space">${disk.used} / ${disk.total}</div>
+                    <div class="disk-progress">
+                        <div class="disk-progress-bar ${progressClass}" style="width: ${disk.percentage}%"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function refreshStats() {
+    getSystemStats();
+}
 
         function refreshStats() {
             getSystemStats();
