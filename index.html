@@ -2148,9 +2148,15 @@ function refreshStats() {
     		window.open(`/api/docker.php?logs=${containerName}`, '_blank');
 	}
 
-	function refreshContainers() {
-    		getContainers();
-	}
+function refreshContainers() {
+    // Check which tab is active and refresh accordingly
+    const activeTab = document.querySelector('.tab-panel.active');
+    if (activeTab && activeTab.id === 'overview-panel') {
+        loadContainerSummaryFast();
+    } else {
+        getContainers();
+    }
+}
 
         // Docker container management
 async function getContainers(fast = false) {
@@ -2639,12 +2645,12 @@ function loadContainerSummaryFast() {
     const summaryGrid = document.getElementById('containerGridOverview');
     if (!summaryGrid) return;
     
-    // Show loading state immediately with a spinner
+    // Show loading state immediately
     summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">🔄 Loading...</div>';
     
-    // Use fast API endpoint with minimal timeout
+    // Use fast API endpoint with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
     
     fetch('/api/docker.php?fast=true', {
         signal: controller.signal,
@@ -2652,7 +2658,6 @@ function loadContainerSummaryFast() {
     })
     .then(response => {
         clearTimeout(timeoutId);
-        if (!response.ok) throw new Error('API response not ok');
         return response.json();
     })
     .then(containers => {
@@ -2661,36 +2666,40 @@ function loadContainerSummaryFast() {
             return;
         }
         
-        // Show only running containers, limit to 3 for speed
-        const runningContainers = containers.filter(c => c.status === 'running').slice(0, 3);
+        // Show only running containers, limit to 4 for overview
+        const runningContainers = containers.filter(c => c.status === 'running').slice(0, 4);
         
         if (runningContainers.length === 0) {
             summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">No running containers</div>';
             return;
         }
         
-        // Simplified container cards for speed
+        // Create simplified container cards
         summaryGrid.innerHTML = runningContainers.map(container => `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 8px;">
                 <div style="min-width: 0; flex: 1;">
                     <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${container.name}</div>
                     <div style="font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${container.image}</div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                    <div style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></div>
-                    <span style="font-size: 11px; color: var(--text-secondary);">Up</span>
+                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                    <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
+                    <span style="font-size: 11px; color: var(--text-secondary);">Running</span>
                 </div>
             </div>
         `).join('');
     })
     .catch(error => {
         clearTimeout(timeoutId);
-        // Fallback to cached/placeholder data on error
-        summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">⚡ Containers available in Docker tab</div>';
-        console.log('Container summary failed, using fallback:', error);
+        console.log('Container summary error:', error);
+        
+        // Show a more helpful fallback message
+        if (error.name === 'AbortError') {
+            summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">⏱️ Docker API timeout - check Docker tab</div>';
+        } else {
+            summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">📊 View containers in Docker tab</div>';
+        }
     });
 }
-
         // Render apps in specific grid
         function renderAppsInTab(gridId) {
             const grid = document.getElementById(gridId);
