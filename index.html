@@ -2674,26 +2674,6 @@ function loadContainerSummaryFast() {
         summaryGrid.innerHTML = runningContainers.map(container => `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 8px;">
                 <div style="min-width: 0; flex: 1;">
-                    <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${container.name}</div>
-                    <div style="font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${container.image}</div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-                    <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
-                    <span style="font-size: 11px; color: var(--text-secondary);">Running</span>
-                </div>
-            </div>
-        `).join('');
-    })
-    .catch(error => {
-        console.log('Container summary error:', error);
-        summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">🐳 Docker not available</div>';
-    });
-}
-        
-        // Create simplified container cards
-        summaryGrid.innerHTML = runningContainers.map(container => `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 8px;">
-                <div style="min-width: 0; flex: 1;">
                     <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${container.name || 'Unknown'}</div>
                     <div style="font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${container.image || 'Unknown image'}</div>
                 </div>
@@ -2975,46 +2955,46 @@ function applyOverviewSectionOrder() {
         // Initialize everything
         console.log('Initializing page...');
         initTheme();
-	checkAuthStatus();
+        checkAuthStatus();
         
         // Load data from API
         loadApps().then(() => {
             console.log('Apps loaded');
-            loadOverviewData(); // Load overview tab data
         });
         
-loadSavedSettings().then(() => {
-    console.log('Settings loaded');
-});
+        loadSavedSettings().then(() => {
+            console.log('Settings loaded');
+        });
 
-// Load overview order and initialize drag and drop
-loadOverviewSectionOrder().then(() => {
-    console.log('Overview section order loaded');
-});
+        // Load overview order and initialize drag and drop
+        loadOverviewSectionOrder().then(() => {
+            console.log('Overview section order loaded');
+        });
         
-// Load overview data immediately
-loadOverviewData();
+        // Load overview data immediately
+        loadOverviewData();
 
-// Load full stats in background
-setTimeout(() => {
-    getSystemStats();
-    // Only load full containers if not on overview tab
-    const activeTab = document.querySelector('.tab-panel.active');
-    if (!activeTab || activeTab.id !== 'overview-panel') {
-        getContainers(false);
-    }
-}, 500);
+        // Load full stats in background
+        setTimeout(() => {
+            getSystemStats();
+            // Only load full containers if not on overview tab
+            const activeTab = document.querySelector('.tab-panel.active');
+            if (!activeTab || activeTab.id !== 'overview-panel') {
+                getContainers(false);
+            }
+        }, 500);
 
-setInterval(getSystemStats, 30000);
-setInterval(() => {
-    getContainers(false);
-    // Also refresh overview containers if overview tab is active
-    const activeTab = document.querySelector('.tab-panel.active');
-    if (activeTab && activeTab.id === 'overview-panel') {
-        loadContainerSummaryFast();
-    }
-}, 60000);
-setInterval(checkAuthStatus, 60000);
+        // Auto-refresh intervals
+        setInterval(getSystemStats, 30000);
+        setInterval(() => {
+            getContainers(false);
+            // Also refresh overview containers if overview tab is active
+            const activeTab = document.querySelector('.tab-panel.active');
+            if (activeTab && activeTab.id === 'overview-panel') {
+                loadContainerSummaryFast();
+            }
+        }, 60000);
+        setInterval(checkAuthStatus, 60000);
     </script>
 </body>
 </html>
