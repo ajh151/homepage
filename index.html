@@ -238,6 +238,15 @@
             gap: 16px;
         }
 
+	.stat-card.storage-overview {
+    grid-column: 1 / -1; /* Take full width */
+    max-width: none;
+}
+
+.stat-card.storage-overview .stat-info {
+    width: 100%;
+}
+
         .stat-card {
             background: var(--bg-primary);
             border: 1px solid var(--border-color);
@@ -912,7 +921,15 @@
                         <div class="stat-value" id="memUsage">--%</div>
                     </div>
                 </div>
-<div class="stat-card" style="grid-column: span 2;">
+
+<div class="stat-card">
+    <div class="stat-icon">⏱️</div>
+    <div class="stat-info">
+        <div class="stat-label">Uptime</div>
+        <div class="stat-value" id="uptime">-- days</div>
+    </div>
+</div>
+<div class="stat-card storage-overview">
     <div class="stat-icon">💿</div>
     <div class="stat-info" style="width: 100%;">
         <div class="stat-label">Storage Overview</div>
@@ -922,16 +939,9 @@
         </div>
     </div>
 </div>
-<div class="stat-card">
-    <div class="stat-icon">⏱️</div>
-    <div class="stat-info">
-        <div class="stat-label">Uptime</div>
-        <div class="stat-value" id="uptime">-- days</div>
-    </div>
-</div>
-            </div>
 
-            </div>
+</div>
+</div>
 
         <!-- Docker Containers Section -->
         <div class="apps-section">
