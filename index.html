@@ -2639,43 +2639,56 @@ function loadContainerSummaryFast() {
     const summaryGrid = document.getElementById('containerGridOverview');
     if (!summaryGrid) return;
     
-    // Show loading state immediately
-    summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">🔄 Loading containers...</div>';
+    // Show loading state immediately with a spinner
+    summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">🔄 Loading...</div>';
     
-    // Use fast API endpoint
-    fetch('/api/docker.php?fast=true')
-        .then(response => response.json())
-        .then(containers => {
-            if (!containers || containers.length === 0) {
-                summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">No containers found</div>';
-                return;
-            }
-            
-            // Show only running containers in overview, limit to 4
-            const runningContainers = containers.filter(c => c.status === 'running').slice(0, 4);
-            
-            if (runningContainers.length === 0) {
-                summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">No running containers</div>';
-                return;
-            }
-            
-            summaryGrid.innerHTML = runningContainers.map(container => `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px;">
-                    <div>
-                        <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">${container.name}</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">${container.image}</div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
-                        <span style="font-size: 12px; color: var(--text-secondary);">Running</span>
-                    </div>
+    // Use fast API endpoint with minimal timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+    
+    fetch('/api/docker.php?fast=true', {
+        signal: controller.signal,
+        cache: 'no-cache'
+    })
+    .then(response => {
+        clearTimeout(timeoutId);
+        if (!response.ok) throw new Error('API response not ok');
+        return response.json();
+    })
+    .then(containers => {
+        if (!containers || containers.length === 0) {
+            summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">No containers found</div>';
+            return;
+        }
+        
+        // Show only running containers, limit to 3 for speed
+        const runningContainers = containers.filter(c => c.status === 'running').slice(0, 3);
+        
+        if (runningContainers.length === 0) {
+            summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">No running containers</div>';
+            return;
+        }
+        
+        // Simplified container cards for speed
+        summaryGrid.innerHTML = runningContainers.map(container => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 6px;">
+                <div style="min-width: 0; flex: 1;">
+                    <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${container.name}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${container.image}</div>
                 </div>
-            `).join('');
-        })
-        .catch(error => {
-            console.log('Container summary not available:', error);
-            summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">❌ Error loading containers</div>';
-        });
+                <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                    <div style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></div>
+                    <span style="font-size: 11px; color: var(--text-secondary);">Up</span>
+                </div>
+            </div>
+        `).join('');
+    })
+    .catch(error => {
+        clearTimeout(timeoutId);
+        // Fallback to cached/placeholder data on error
+        summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">⚡ Containers available in Docker tab</div>';
+        console.log('Container summary failed, using fallback:', error);
+    });
 }
 
         // Render apps in specific grid
@@ -2990,10 +3003,16 @@ loadOverviewSectionOrder().then(() => {
             getContainers(false); // This will update the "Loading..." with real stats
         }, 100);
         
-        // Auto-refresh
-        setInterval(getSystemStats, 30000);
-        setInterval(getContainers, 60000);
-	setInterval(checkAuthStatus, 60000); // Check auth status every minute
+setInterval(getSystemStats, 30000);
+setInterval(() => {
+    getContainers(false);
+    // Also refresh overview containers if overview tab is active
+    const activeTab = document.querySelector('.tab-panel.active');
+    if (activeTab && activeTab.id === 'overview-panel') {
+        loadContainerSummaryFast();
+    }
+}, 60000);
+setInterval(checkAuthStatus, 60000);
     </script>
 </body>
 </html>
