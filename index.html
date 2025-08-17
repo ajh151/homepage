@@ -2632,13 +2632,13 @@ function switchTab(tabName) {
 function loadOverviewData() {
     getSystemStats();
     renderAppsInTab('appsGrid');
-    loadContainerSummaryFast(); // <-- Use fast version
+    loadContainerSummaryFast();
     
-    // Initialize drag and drop for overview sections with a longer delay
+    // Initialize drag and drop for overview sections
     setTimeout(() => {
         console.log('Initializing overview drag and drop...');
         initOverviewDragAndDrop();
-    }, 500);
+    }, 300);
 }
 
 function loadContainerSummaryFast() {
@@ -2648,27 +2648,16 @@ function loadContainerSummaryFast() {
     // Show loading state immediately
     summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">🔄 Loading...</div>';
     
-    // Use fast API endpoint with longer timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-    
-    fetch('/api/docker.php?fast=true', {
-        signal: controller.signal,
-        cache: 'no-cache'
-    })
+    // Use the same function as the Docker tab but with fast=true
+    fetch('/api/docker.php?fast=true')
     .then(response => {
-        clearTimeout(timeoutId);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
         return response.json();
     })
     .then(containers => {
-        if (!Array.isArray(containers)) {
-            throw new Error('Invalid response format');
-        }
-        
-        if (containers.length === 0) {
+        if (!Array.isArray(containers) || containers.length === 0) {
             summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">No containers found</div>';
             return;
         }
@@ -2680,6 +2669,26 @@ function loadContainerSummaryFast() {
             summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">No running containers</div>';
             return;
         }
+        
+        // Create simplified container cards
+        summaryGrid.innerHTML = runningContainers.map(container => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 8px;">
+                <div style="min-width: 0; flex: 1;">
+                    <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${container.name}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${container.image}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                    <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
+                    <span style="font-size: 11px; color: var(--text-secondary);">Running</span>
+                </div>
+            </div>
+        `).join('');
+    })
+    .catch(error => {
+        console.log('Container summary error:', error);
+        summaryGrid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 12px;">🐳 Docker not available</div>';
+    });
+}
         
         // Create simplified container cards
         summaryGrid.innerHTML = runningContainers.map(container => `
@@ -2746,33 +2755,6 @@ function loadContainerSummaryFast() {
                 
                 grid.appendChild(appElement);
             });
-        }
-
-        // Load container summary for overview
-        function loadContainerSummary() {
-            fetch('/api/docker.php?fast=true')
-                .then(response => response.json())
-                .then(containers => {
-                    const summaryGrid = document.getElementById('containerGridOverview');
-                    if (!summaryGrid || !containers) return;
-                    
-                    // Show only running containers in overview
-                    const runningContainers = containers.filter(c => c.status === 'running').slice(0, 4);
-                    
-                    summaryGrid.innerHTML = runningContainers.map(container => `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px;">
-                            <div>
-                                <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">${container.name}</div>
-                                <div style="font-size: 12px; color: var(--text-secondary);">${container.image}</div>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
-                                <span style="font-size: 12px; color: var(--text-secondary);">Running</span>
-                            </div>
-                        </div>
-                    `).join('');
-                })
-                .catch(error => console.log('Container summary not available'));
         }
 
         // Update detailed stats (for system tab)
@@ -3010,15 +2992,19 @@ loadOverviewSectionOrder().then(() => {
     console.log('Overview section order loaded');
 });
         
-        // INSTANT container loading with placeholders
-        getContainers(true);
+// Load overview data immediately
+loadOverviewData();
 
-        // Load full stats in background
-        setTimeout(() => {
-            getSystemStats();
-            getContainers(false); // This will update the "Loading..." with real stats
-        }, 100);
-        
+// Load full stats in background
+setTimeout(() => {
+    getSystemStats();
+    // Only load full containers if not on overview tab
+    const activeTab = document.querySelector('.tab-panel.active');
+    if (!activeTab || activeTab.id !== 'overview-panel') {
+        getContainers(false);
+    }
+}, 500);
+
 setInterval(getSystemStats, 30000);
 setInterval(() => {
     getContainers(false);
