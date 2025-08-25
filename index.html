@@ -2493,17 +2493,28 @@ document.getElementById('loginForm').addEventListener('submit', handleLogin);
         // App form submission
         document.getElementById('addAppForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            console.log('Form submitted!'); // Debug line
             
             const name = document.getElementById('appName').value.trim();
             const url = document.getElementById('appUrl').value.trim();
             const icon = document.getElementById('appIcon').value.trim();
             
+            console.log('Form data:', { name, url, icon }); // Debug line
+            
             if (name && url) {
+                console.log('Adding app...'); // Debug line
                 apps.push({ name, url, icon });
-                await saveApps();
+                console.log('Apps array:', apps); // Debug line
+                
+                const saved = await saveApps();
+                console.log('Saved to API:', saved); // Debug line
+                
                 renderApps();
                 closeModal();
                 showStatus('success', `${name} added successfully!`);
+            } else {
+                console.log('Form validation failed:', { name, url }); // Debug line
+                showStatus('error', 'Please fill in both name and URL');
             }
         });
 
