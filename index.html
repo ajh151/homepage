@@ -1998,35 +1998,11 @@ async function handleLogin(event) {
             draggedIndex = null;
         }
 
-        function renderApps() {
-            const grid = document.getElementById('appsGrid');
-            grid.innerHTML = '';
-
-            apps.forEach((app, index) => {
-                const appElement = document.createElement('a');
-                appElement.className = 'app-item';
-                appElement.href = app.url;
-                appElement.target = '_blank';
-                appElement.draggable = true;
-                appElement.dataset.index = index;
-                
-                appElement.innerHTML = `
-                    <div class="app-icon">${app.icon || app.name.charAt(0).toUpperCase()}</div>
-                    <div class="app-name">${app.name}</div>
-                    <button class="delete-btn" onclick="deleteApp(event, ${index})" title="Delete">×</button>
-                `;
-                
-                // Add drag event listeners
-                appElement.addEventListener('dragstart', handleDragStart);
-                appElement.addEventListener('dragover', handleDragOver);
-                appElement.addEventListener('dragenter', handleDragEnter);
-                appElement.addEventListener('dragleave', handleDragLeave);
-                appElement.addEventListener('drop', handleDrop);
-                appElement.addEventListener('dragend', handleDragEnd);
-                
-                grid.appendChild(appElement);
-            });
-        }
+function renderApps() {
+    // Render in both overview and full grids
+    renderAppsInTab('appsGrid');
+    renderAppsInTab('appsGridFull');
+}
 
         function openModal() {
             document.getElementById('addModal').style.display = 'block';
@@ -2527,6 +2503,7 @@ document.getElementById('loginForm').addEventListener('submit', handleLogin);
                 await saveApps();
                 renderApps();
                 closeModal();
+                showStatus('success', `${name} added successfully!`);
             }
         });
 
@@ -2708,7 +2685,7 @@ function loadContainerSummaryFast() {
                 appElement.href = app.url;
                 appElement.target = '_blank';
                 
-                // Add drag and drop only for full apps tab
+                // Add drag and drop for full apps tab, delete button for both
                 if (gridId === 'appsGridFull') {
                     appElement.draggable = true;
                     appElement.dataset.index = index;
@@ -2726,10 +2703,11 @@ function loadContainerSummaryFast() {
                     appElement.addEventListener('drop', handleDrop);
                     appElement.addEventListener('dragend', handleDragEnd);
                 } else {
-                    // Simple version for overview
+                    // Overview version - simpler but still with delete capability
                     appElement.innerHTML = `
                         <div class="app-icon">${app.icon || app.name.charAt(0).toUpperCase()}</div>
                         <div class="app-name">${app.name}</div>
+                        <button class="delete-btn" onclick="deleteApp(event, ${index})" title="Delete">×</button>
                     `;
                 }
                 
