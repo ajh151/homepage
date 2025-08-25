@@ -2004,6 +2004,16 @@ function renderApps() {
     renderAppsInTab('appsGridFull');
 }
 
+        function cleanupApps() {
+            const originalLength = apps.length;
+            apps = apps.filter(app => app && app.name && app.url);
+            
+            if (apps.length !== originalLength) {
+                console.log(`Cleaned up apps: removed ${originalLength - apps.length} invalid entries`);
+                saveApps(); // Save the cleaned data
+            }
+        }
+
         function openModal() {
             document.getElementById('addModal').style.display = 'block';
             document.getElementById('appName').focus();
@@ -2691,6 +2701,12 @@ function loadContainerSummaryFast() {
             
             grid.innerHTML = '';
             apps.forEach((app, index) => {
+                // Skip null or invalid apps
+                if (!app || !app.name || !app.url) {
+                    console.log('Skipping invalid app at index', index, app);
+                    return;
+                }
+                
                 const appElement = document.createElement('a');
                 appElement.className = 'app-item';
                 appElement.href = app.url;
@@ -2949,6 +2965,7 @@ function applyOverviewSectionOrder() {
         // Load data from API
         loadApps().then(() => {
             console.log('Apps loaded');
+            cleanupApps(); // Clean up any corrupted data
         });
         
         loadSavedSettings().then(() => {
